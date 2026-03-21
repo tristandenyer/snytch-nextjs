@@ -3,6 +3,7 @@ import { join } from 'path';
 import { PATTERNS } from '../patterns.js';
 import { loadConfig, resolveEnvVars } from '../config.js';
 import { resolveGitContext } from '../gitlog.js';
+import { generateRcaForFindings } from '../rca.js';
 import { Finding, ScanResult, ScanOptions } from '../types.js';
 
 function recursiveReadFiles(dir: string, extension: string): string[] {
@@ -144,6 +145,11 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
     if (ctx !== null && ctx !== undefined) {
       finding.gitContext = ctx;
     }
+  }
+
+  // Pass 4: AI RCA — only when --report is set, a provider is configured, and findings exist
+  if (options.report && options.aiProvider && options.aiProvider !== 'none') {
+    await generateRcaForFindings(findings, options.projectRoot, options.aiProvider);
   }
 
   const durationMs = Date.now() - startTime;

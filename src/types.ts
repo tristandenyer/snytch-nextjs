@@ -19,6 +19,8 @@ export interface Finding {
   truncatedValue: string;
   /** Git provenance for this finding — populated when a git repo is present. */
   gitContext?: GitContext;
+  /** AI-generated root cause analysis — populated when --report and API key are set. */
+  rca?: RcaResult;
 }
 
 export interface ScanResult {
@@ -27,12 +29,30 @@ export interface ScanResult {
   durationMs: number;
 }
 
+export type AiProvider = 'anthropic' | 'openai' | 'none';
+
+export interface RcaResult {
+  /** One-sentence description of what was leaked. */
+  what: string;
+  /** When it was likely introduced (relative time or commit reference). */
+  when: string;
+  /** How the value ended up in the client bundle (structural cause). */
+  how: string;
+  /** Concrete remediation steps. */
+  fix: string;
+  /** Optional illustrative code snippet showing the fix. */
+  codeExample: string;
+  /** Two short prompts the developer can paste into their editor AI. */
+  editorPrompts: [string, string];
+}
+
 export interface ScanOptions {
   dir: string;
   projectRoot: string;
   json: boolean;
   report: boolean;
   failOn: FailOn;
+  aiProvider?: AiProvider;
 }
 
 export interface SnytchConfig {

@@ -1,7 +1,7 @@
 import { writeFileSync } from 'fs';
 import { join, relative } from 'path';
 import { execSync } from 'child_process';
-import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions, CheckFinding, DiffResult, DiffOptions } from './types.js';
+import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions, CheckFinding, DiffResult, DiffOptions, RcaResult } from './types.js';
 
 function getGitSha(projectRoot: string): string {
   try {
@@ -95,6 +95,72 @@ function renderFindingsTab(
   return `${summaryCards}<div class="findings-list">${cards}</div>`;
 }
 
+function renderRcaCard(finding: Finding, projectRoot: string, rca: RcaResult): string {
+  return `
+    <div class="rca-card">
+      <div class="rca-card-header">
+        <span class="badge badge-critical">CRITICAL</span>
+        <span class="pattern-name">${escapeHtml(finding.patternName)}</span>
+        <span class="rca-file mono">${escapeHtml(relPath(finding.filePath, projectRoot))}</span>
+      </div>
+      <div class="rca-card-body">
+        <div class="rca-section">
+          <div class="rca-label">What</div>
+          <div class="rca-content">${escapeHtml(rca.what)}</div>
+        </div>
+        <div class="rca-section">
+          <div class="rca-label">When</div>
+          <div class="rca-content">${escapeHtml(rca.when)}</div>
+        </div>
+        <div class="rca-section">
+          <div class="rca-label">How</div>
+          <div class="rca-content">${escapeHtml(rca.how)}</div>
+        </div>
+        <div class="rca-section">
+          <div class="rca-label">Fix</div>
+          <div class="rca-content">${escapeHtml(rca.fix)}</div>
+        </div>
+        ${rca.codeExample ? `
+        <div class="rca-section">
+          <div class="rca-label">Code</div>
+          <pre class="rca-code">${escapeHtml(rca.codeExample)}</pre>
+        </div>` : ''}
+        <div class="rca-section">
+          <div class="rca-label">Editor prompts</div>
+          <div class="rca-prompts">
+            <div class="rca-prompt">
+              <span class="prompt-tag">Fix</span>
+              <code class="rca-prompt-text">${escapeHtml(rca.editorPrompts[0])}</code>
+            </div>
+            <div class="rca-prompt">
+              <span class="prompt-tag">Verify</span>
+              <code class="rca-prompt-text">${escapeHtml(rca.editorPrompts[1])}</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderRcaTab(result: ScanResult, projectRoot: string): string {
+  const criticals = result.findings.filter((f) => f.severity === 'critical' && f.rca);
+
+  if (criticals.length === 0) {
+    const hasCriticals = result.findings.some((f) => f.severity === 'critical');
+    if (!hasCriticals) {
+      return `<div class="placeholder">No critical findings — AI RCA not needed.</div>`;
+    }
+    return `
+      <div class="placeholder">
+        Set <code>ANTHROPIC_API_KEY</code> and run <code>snytch scan --report</code> to enable AI analysis.<br>
+        The AI RCA tab provides a what / when / how / fix breakdown for each critical finding.
+      </div>`;
+  }
+
+  const cards = criticals.map((f) => renderRcaCard(f, projectRoot, f.rca!)).join('');
+  return `<div class="rca-list">${cards}</div>`;
+}
+
 function buildHtml(
   result: ScanResult,
   options: ScanOptions,
@@ -102,6 +168,7 @@ function buildHtml(
   timestamp: string,
 ): string {
   const findingsHtml = renderFindingsTab(result, options.projectRoot);
+  const rcaHtml = renderRcaTab(result, options.projectRoot);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -321,6 +388,88 @@ function buildHtml(
       border-radius: 4px;
       color: var(--text);
     }
+
+    /* ── RCA tab ────────────────────────────────────────── */
+    .rca-list { display: flex; flex-direction: column; gap: 20px; }
+
+    .rca-card {
+      border: 1px solid var(--critical-border);
+      border-left: 4px solid var(--critical);
+      border-radius: 8px;
+      background: var(--critical-bg);
+      overflow: hidden;
+    }
+
+    .rca-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--critical-border);
+      flex-wrap: wrap;
+    }
+
+    .rca-file {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    .rca-card-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+    .rca-section { display: flex; gap: 12px; }
+    .rca-label {
+      color: var(--text2);
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 56px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding-top: 1px;
+    }
+    .rca-content { font-size: 13px; line-height: 1.6; }
+
+    .rca-code {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    .rca-prompts { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .rca-prompt {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .prompt-tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--bg3);
+      color: var(--text2);
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .rca-prompt-text {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
   </style>
 </head>
 <body>
@@ -351,10 +500,7 @@ function buildHtml(
   </div>
 
   <div id="tab-rca" class="tab-panel">
-    <div class="placeholder">
-      Set <code>ANTHROPIC_API_KEY</code> and run <code>snytch scan --report</code> to enable AI analysis.<br>
-      The AI RCA tab provides a what / when / how / fix breakdown for each finding.
-    </div>
+    ${rcaHtml}
   </div>
 
   <script>

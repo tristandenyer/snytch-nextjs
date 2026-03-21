@@ -6,7 +6,7 @@ import { scan } from './commands/scan.js';
 import { check } from './commands/check.js';
 import { diff } from './commands/diff.js';
 import { printScanResult, printCheckResult, printDiffResult } from './output.js';
-import { ScanOptions, CheckOptions, DiffOptions, FailOn } from './types.js';
+import { ScanOptions, CheckOptions, DiffOptions, FailOn, AiProvider } from './types.js';
 import { loadConfig } from './config.js';
 
 function parseFailOn(args: string[], i: number): FailOn {
@@ -22,7 +22,7 @@ async function main() {
 
   if (!command || (command !== 'scan' && command !== 'check' && command !== 'diff')) {
     console.error('Usage:');
-    console.error('  snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all]');
+    console.error('  snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none]');
     console.error('  snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|all]');
     console.error('  snytch diff --env .env.staging --env .env.production [--json] [--report] [--strict]');
     console.error('');
@@ -36,6 +36,7 @@ async function main() {
   let report = false;
   let strict = false;
   let failOn: FailOn = 'critical';
+  let aiProvider: AiProvider = 'anthropic';
   let dir = projectRoot + '/.next';
   const envFiles: string[] = [];
 
@@ -50,6 +51,12 @@ async function main() {
     } else if (arg === '--fail-on' && args[i + 1]) {
       failOn = parseFailOn(args, i);
       i++;
+    } else if (arg === '--ai-provider' && args[i + 1]) {
+      const val = args[i + 1];
+      if (val === 'anthropic' || val === 'openai' || val === 'none') {
+        aiProvider = val;
+      }
+      i++;
     } else if (arg === '--dir' && args[i + 1]) {
       dir = args[i + 1];
       i++;
@@ -61,7 +68,7 @@ async function main() {
 
   try {
     if (command === 'scan') {
-      const options: ScanOptions = { dir, projectRoot, json, report, failOn };
+      const options: ScanOptions = { dir, projectRoot, json, report, failOn, aiProvider };
       const result = await scan(options);
       printScanResult(result, options);
 
