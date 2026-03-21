@@ -54,7 +54,7 @@ snytch scan --dir ./apps/web/.next
 | `--fail-on`     | `critical`  | Exit code threshold: `critical`, `warning`, or `all`                                                          |
 | `--ai-provider` | `anthropic` | AI RCA provider: `anthropic` (requires `ANTHROPIC_API_KEY`) or `openai` (requires `OPENAI_API_KEY`) or `none` |
 
-![Scan report showing detected secrets, severity levels, file paths, and git provenance](./docs/screenshots/snytch-report-findings.png)
+![Scan report showing detected secrets, severity levels, file paths, and git provenance](https://raw.githubusercontent.com/tristandenyer/snytch-nextjs/main/docs/screenshots/snytch-report-findings.png)
 
 ### `snytch check`
 
@@ -102,7 +102,7 @@ snytch diff --env .env.staging --env .env.production --report --strict
 | `--report` | off      | Generate an HTML report at `./snytch-reports/snytch-diff-report.html` |
 | `--strict` | off      | Exit 1 for any drift, not just `serverOnly` keys                      |
 
-![Diff report showing environment variable drift across .env files, with keys that are missing or only present in one environment](./docs/screenshots/snytch-diff-report.png)
+![Diff report showing environment variable drift across .env files, with keys that are missing or only present in one environment](https://raw.githubusercontent.com/tristandenyer/snytch-nextjs/main/docs/screenshots/snytch-diff-report.png)
 
 ### `snytch mcp`
 
@@ -148,7 +148,7 @@ OPENAI_API_KEY=sk-... snytch demo --ai-provider openai
 
 You will be prompted to delete the generated report files when the demo completes.
 
-![AI RCA tab: Claude or GPT-4o explains what leaked, when it was introduced, how it ended up in the bundle, and how to fix it, with a before/after code example and editor prompts](./docs/screenshots/snytch-report-ai-rca.png)
+![AI RCA tab: Claude or GPT-4o explains what leaked, when it was introduced, how it ended up in the bundle, and how to fix it, with a before/after code example and editor prompts](https://raw.githubusercontent.com/tristandenyer/snytch-nextjs/main/docs/screenshots/snytch-report-ai-rca.png)
 
 ---
 
