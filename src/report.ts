@@ -291,7 +291,7 @@ function renderSuppressionsTab(result: ScanResult, projectRoot: string, today: s
       </div>
     </div>`;
 
-  const managedNote = `<p class="suppress-managed-note">Suppressions are managed in <code>snytch.config.js</code>.</p>`;
+  const managedNote = `<p class="suppress-managed-note">Suppressions are managed in <code>snytch.config.js</code>. <a href="https://github.com/tristandenyer/snytch-nextjs?tab=readme-ov-file#suppression-rules" target="_blank" rel="noopener noreferrer" class="suppress-docs-link">Read the docs &rarr;</a></p>`;
 
   return `${managedNote}${legend}<div class="suppress-list">${cards}${expiredOnlyCards}</div>`;
 }
@@ -626,6 +626,14 @@ function buildHtml(
       color: var(--text1);
       margin: 0 0 16px 0;
     }
+    .suppress-docs-link {
+      font-weight: 400;
+      font-size: 13px;
+      color: var(--accent);
+      text-decoration: none;
+      margin-left: 6px;
+    }
+    .suppress-docs-link:hover { text-decoration: underline; }
     .suppress-legend {
       display: flex;
       flex-direction: column;
