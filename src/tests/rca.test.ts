@@ -3,13 +3,26 @@ import type { Finding, RcaResult } from '../types.js';
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
-const mockCreate = vi.hoisted(() => vi.fn());
+const mockAnthropicCreate = vi.hoisted(() => vi.fn());
+const mockOpenAICreate = vi.hoisted(() => vi.fn());
+
+// Keep legacy alias so existing test code continues to work
+const mockCreate = mockAnthropicCreate;
 
 // ── Mock @anthropic-ai/sdk ────────────────────────────────────────────────────
 
 vi.mock('@anthropic-ai/sdk', () => ({
   default: class MockAnthropic {
-    messages = { create: mockCreate };
+    messages = { create: mockAnthropicCreate };
+    constructor(_opts: unknown) {}
+  },
+}));
+
+// ── Mock openai ───────────────────────────────────────────────────────────────
+
+vi.mock('openai', () => ({
+  default: class MockOpenAI {
+    chat = { completions: { create: mockOpenAICreate } };
     constructor(_opts: unknown) {}
   },
 }));
@@ -57,14 +70,17 @@ const validRca: RcaResult = {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  mockCreate.mockReset();
+  mockAnthropicCreate.mockReset();
+  mockOpenAICreate.mockReset();
   mockReadFileSync.mockReset();
   mockReadFileSync.mockReturnValue(JSON.stringify({ dependencies: { next: '14.2.0' } }));
   process.env['ANTHROPIC_API_KEY'] = 'test-key';
+  delete process.env['OPENAI_API_KEY'];
 });
 
 afterEach(() => {
   delete process.env['ANTHROPIC_API_KEY'];
+  delete process.env['OPENAI_API_KEY'];
 });
 
 describe('generateRcaForFindings', () => {
@@ -230,15 +246,87 @@ describe('generateRcaForFindings', () => {
     expect(finding.rca).toBeUndefined();
   });
 
-  it('emits a warning to stderr for the openai provider (not yet implemented)', async () => {
+  // ── OpenAI provider ─────────────────────────────────────────────────────────
+
+  it('skips when OPENAI_API_KEY is not set for openai provider', async () => {
+    delete process.env['ANTHROPIC_API_KEY'];
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     const finding = makeFinding();
     await generateRcaForFindings([finding], '/project', 'openai');
 
-    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('OpenAI provider is not yet implemented'));
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('OPENAI_API_KEY not set'));
     expect(finding.rca).toBeUndefined();
+    expect(mockOpenAICreate).not.toHaveBeenCalled();
 
     stderrSpy.mockRestore();
+  });
+
+  it('attaches rca via openai provider on success', async () => {
+    delete process.env['ANTHROPIC_API_KEY'];
+    process.env['OPENAI_API_KEY'] = 'test-openai-key';
+
+    mockOpenAICreate.mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify(validRca) } }],
+    });
+
+    const finding = makeFinding();
+    await generateRcaForFindings([finding], '/project', 'openai');
+
+    expect(finding.rca).toBeDefined();
+    expect(finding.rca!.what).toBe(validRca.what);
+    expect(finding.rca!.editorPrompts).toHaveLength(2);
+    expect(mockAnthropicCreate).not.toHaveBeenCalled();
+  });
+
+  it('leaves rca undefined when openai returns malformed JSON', async () => {
+    process.env['OPENAI_API_KEY'] = 'test-openai-key';
+
+    mockOpenAICreate.mockResolvedValue({
+      choices: [{ message: { content: 'not valid json' } }],
+    });
+
+    const finding = makeFinding();
+    await generateRcaForFindings([finding], '/project', 'openai');
+
+    expect(finding.rca).toBeUndefined();
+  });
+
+  it('leaves rca undefined when openai returns missing required fields', async () => {
+    process.env['OPENAI_API_KEY'] = 'test-openai-key';
+
+    mockOpenAICreate.mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify({ what: 'partial' }) } }],
+    });
+
+    const finding = makeFinding();
+    await generateRcaForFindings([finding], '/project', 'openai');
+
+    expect(finding.rca).toBeUndefined();
+  });
+
+  it('leaves rca undefined when openai call throws', async () => {
+    process.env['OPENAI_API_KEY'] = 'test-openai-key';
+
+    mockOpenAICreate.mockRejectedValue(new Error('quota exceeded'));
+
+    const finding = makeFinding();
+    await generateRcaForFindings([finding], '/project', 'openai');
+
+    expect(finding.rca).toBeUndefined();
+  });
+
+  it('strips markdown code fences from openai response', async () => {
+    process.env['OPENAI_API_KEY'] = 'test-openai-key';
+
+    mockOpenAICreate.mockResolvedValue({
+      choices: [{ message: { content: '```json\n' + JSON.stringify(validRca) + '\n```' } }],
+    });
+
+    const finding = makeFinding();
+    await generateRcaForFindings([finding], '/project', 'openai');
+
+    expect(finding.rca).toBeDefined();
+    expect(finding.rca!.what).toBe(validRca.what);
   });
 });

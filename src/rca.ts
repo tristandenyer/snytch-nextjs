@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { Finding, RcaResult, AiProvider } from './types.js';
@@ -169,6 +170,72 @@ async function callAnthropic(finding: Finding, projectRoot: string, maxTokens: n
   }
 }
 
+/**
+ * Call the OpenAI API to generate an RCA for a single finding.
+ *
+ * @param finding     - The critical finding to analyse.
+ * @param projectRoot - Absolute project root (used to read Next.js version).
+ * @param maxTokens   - Maximum tokens for the response.
+ * @returns Parsed RcaResult, or null on any error.
+ */
+async function callOpenAI(finding: Finding, projectRoot: string, maxTokens: number): Promise<RcaResult | null> {
+  const apiKey = process.env['OPENAI_API_KEY'];
+  if (!apiKey) return null;
+
+  const nextVersion = readNextVersion(projectRoot);
+  let prompt = buildPrompt(finding, nextVersion);
+
+  // Safety: strip any visible secret prefix from the outgoing payload
+  const { payload, stripped } = stripSecretValues(prompt, finding.truncatedValue);
+  if (stripped) {
+    process.stderr.write(
+      `  [rca] ⚠ Potential secret prefix detected in prompt payload — redacted before sending.\n`,
+    );
+    prompt = payload;
+  }
+
+  try {
+    const client = new OpenAI({ apiKey });
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const text = response.choices[0]?.message?.content?.trim();
+    if (!text) return null;
+
+    // Strip markdown code fences if the model wrapped the JSON despite instructions
+    const raw = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    const parsed = JSON.parse(raw) as Partial<RcaResult>;
+
+    // Validate required fields
+    if (
+      typeof parsed.what !== 'string' ||
+      typeof parsed.when !== 'string' ||
+      typeof parsed.how !== 'string' ||
+      typeof parsed.fix !== 'string' ||
+      typeof parsed.codeExample !== 'string' ||
+      !Array.isArray(parsed.editorPrompts) ||
+      parsed.editorPrompts.length < 2
+    ) {
+      return null;
+    }
+
+    return {
+      what: parsed.what,
+      when: parsed.when,
+      how: parsed.how,
+      fix: parsed.fix,
+      codeExample: parsed.codeExample,
+      editorPrompts: [parsed.editorPrompts[0] as string, parsed.editorPrompts[1] as string],
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -209,10 +276,19 @@ export async function generateRcaForFindings(
     }
   }
 
-  // 'openai' provider: reserved for future implementation
   if (provider === 'openai') {
-    process.stderr.write(
-      '  [rca] OpenAI provider is not yet implemented. Use --ai-provider anthropic.\n',
-    );
+    if (!process.env['OPENAI_API_KEY']) {
+      process.stderr.write(
+        '  [rca] OPENAI_API_KEY not set — skipping AI RCA.\n',
+      );
+      return;
+    }
+
+    for (const finding of criticals) {
+      const rca = await callOpenAI(finding, projectRoot, maxTokens);
+      if (rca !== null) {
+        finding.rca = rca;
+      }
+    }
   }
 }

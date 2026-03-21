@@ -24,7 +24,7 @@ snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all]
 | `--json` | off | Output results as JSON |
 | `--report` | off | Generate an HTML report at `./snytch-report.html` |
 | `--fail-on` | `critical` | Exit code threshold: `critical`, `warning`, or `all` |
-| `--ai-provider` | `anthropic` | AI RCA provider (requires `ANTHROPIC_API_KEY`) |
+| `--ai-provider` | `anthropic` | AI RCA provider: `anthropic` (requires `ANTHROPIC_API_KEY`) or `openai` (requires `OPENAI_API_KEY`) or `none` |
 
 ### `snytch check`
 
@@ -68,6 +68,36 @@ snytch mcp
 
 ---
 
+### `snytch demo`
+
+Runs a fully synthetic end-to-end demonstration of all three commands — `scan`, `check`, and `diff` — using fake findings that cover the full range of severity levels and pattern types. Output is identical to a real run: the same formatters, the same exit code (1), and real HTML reports written to disk.
+
+```bash
+snytch demo
+```
+
+Three report files are generated in your current directory:
+
+| File | Contents |
+|---|---|
+| `snytch-report.html` | Bundle scan findings with Findings and AI RCA tabs |
+| `snytch-check-report.html` | `NEXT_PUBLIC_` exposure findings |
+| `snytch-diff-report.html` | Environment variable drift across `.env` files |
+
+To see the AI RCA tab populated with real analysis, set an API key before running:
+
+```bash
+# Anthropic (Claude)
+ANTHROPIC_API_KEY=sk-ant-... snytch demo
+
+# OpenAI (GPT-4o)
+OPENAI_API_KEY=sk-... snytch demo --ai-provider openai
+```
+
+You will be prompted to delete the generated report files when the demo completes.
+
+---
+
 ## Features
 
 - Scans `.next/static/chunks` recursively for JavaScript and CSS files
@@ -80,7 +110,7 @@ snytch mcp
   - Private keys (RSA, EC, OpenSSH)
   - JWT tokens and bearer tokens
   - API keys from major cloud providers (Google, Azure, Firebase, etc.)
-- AI root cause analysis via Claude (Anthropic) when `--report` is set
+- AI root cause analysis via Claude (Anthropic) or GPT-4o (OpenAI) when `--report` is set
 - Git provenance for each finding (source file + introducing commit)
 - HTML report with per-finding details and editor prompts
 - MCP server for editor integration (Cursor, Windsurf, Claude Desktop)
