@@ -104,11 +104,31 @@ function renderFindingsTab(
       </div>`;
   }
 
-  const cards = [...criticals, ...warnings]
-    .map((f) => renderFindingCard(f, projectRoot))
+  // Group findings by surface, in triage priority order
+  const surfaceOrder: Array<{ types: string[]; label: string }> = [
+    { types: ['pattern-match', 'value-match'], label: 'client bundle' },
+    { types: ['next-data'],                    label: '__NEXT_DATA__' },
+    { types: ['config-env'],                   label: 'next.config env' },
+    { types: ['middleware-secret'],             label: 'edge middleware' },
+    { types: ['sourcemap-secret'],             label: 'source map' },
+  ];
+
+  const allFindings = [...criticals, ...warnings];
+
+  const groups = surfaceOrder
+    .map(({ types, label }) => {
+      const groupFindings = allFindings.filter((f) => types.includes(f.type));
+      if (groupFindings.length === 0) return '';
+      const cards = groupFindings.map((f) => renderFindingCard(f, projectRoot)).join('');
+      return `
+    <div class="surface-group">
+      <div class="surface-group-header">${escapeHtml(label)}<span class="surface-count">${groupFindings.length}</span></div>
+      ${cards}
+    </div>`;
+    })
     .join('');
 
-  return `${summaryCards}<div class="findings-list">${cards}</div>`;
+  return `${summaryCards}<div class="findings-list">${groups}</div>`;
 }
 
 function renderRcaCard(finding: Finding, projectRoot: string, rca: RcaResult): string {
@@ -432,7 +452,17 @@ function buildHtml(
     .summary-warning .summary-count { color: var(--warning); }
     .summary-clean .summary-count { color: var(--green); }
 
-    .findings-list { display: flex; flex-direction: column; gap: 12px; }
+    .findings-list { display: flex; flex-direction: column; gap: 20px; }
+    .surface-group { display: flex; flex-direction: column; gap: 10px; }
+    .surface-group-header {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--text-muted); padding: 4px 2px; border-bottom: 1px solid var(--border);
+    }
+    .surface-count {
+      background: var(--border); color: var(--text-muted);
+      font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 10px;
+    }
 
     .card {
       border: 1px solid var(--border);
