@@ -360,7 +360,7 @@ export const PATTERNS: SecretPattern[] = [
   },
   {
     name: 'Firebase Service Account Private Key',
-    pattern: /firebase[_-]?private[_-]?key['\"]?\s*[:=]\s*['\"]?-----BEGIN PRIVATE KEY-----/g,
+    pattern: /firebase[_-]?private[_-]?key['"]?\s*[:=]\s*['"]?-----BEGIN PRIVATE KEY-----/g,
     severity: 'critical',
     description: 'Firebase service account private key',
   },
@@ -368,7 +368,7 @@ export const PATTERNS: SecretPattern[] = [
   // Heroku (Category 16)
   {
     name: 'Heroku API Key',
-    pattern: /heroku[_-]?api[_-]?key['\"]?\s*[:=]\s*['\"]?([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/g,
+    pattern: /heroku[_-]?api[_-]?key['"]?\s*[:=]\s*['"]?([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/g,
     severity: 'critical',
     description: 'Heroku API Key',
   },
@@ -840,13 +840,13 @@ export const PATTERNS: SecretPattern[] = [
   },
   {
     name: 'Postgres Password in URL',
-    pattern: /postgres:\/\/[a-zA-Z0-9_]+:([a-zA-Z0-9!@#$%^&*()_+-=\[\]{}|;:,.<>?/~`]{6,})@/g,
+    pattern: /postgres:\/\/[a-zA-Z0-9_]+:([a-zA-Z0-9!@#$%^&*()_+\-=[\]{}|;:,.<>?/~`]{6,})@/g,
     severity: 'critical',
     description: 'PostgreSQL password in connection URL',
   },
   {
     name: 'MySQL Password in URL',
-    pattern: /mysql:\/\/[a-zA-Z0-9_]+:([a-zA-Z0-9!@#$%^&*()_+-=\[\]{}|;:,.<>?/~`]{6,})@/g,
+    pattern: /mysql:\/\/[a-zA-Z0-9_]+:([a-zA-Z0-9!@#$%^&*()_+\-=[\]{}|;:,.<>?/~`]{6,})@/g,
     severity: 'critical',
     description: 'MySQL password in connection URL',
   },
@@ -912,25 +912,25 @@ export const PATTERNS: SecretPattern[] = [
   },
   {
     name: 'Twilio Account SID (variant)',
-    pattern: /twilio[_-]?account[_-]?sid['\"]?\s*[:=]\s*['\"]?(AC[a-zA-Z0-9]{32})/g,
+    pattern: /twilio[_-]?account[_-]?sid['"]?\s*[:=]\s*['"]?(AC[a-zA-Z0-9]{32})/g,
     severity: 'critical',
     description: 'Twilio Account SID in config',
   },
   {
     name: 'Twilio Auth Token (variant)',
-    pattern: /twilio[_-]?auth[_-]?token['\"]?\s*[:=]\s*['\"]?([a-zA-Z0-9]{32})/g,
+    pattern: /twilio[_-]?auth[_-]?token['"]?\s*[:=]\s*['"]?([a-zA-Z0-9]{32})/g,
     severity: 'critical',
     description: 'Twilio Auth Token in config',
   },
   {
     name: 'SendGrid API Key (variant)',
-    pattern: /sendgrid[_-]?api[_-]?key['\"]?\s*[:=]\s*['\"]?(SG\.[a-zA-Z0-9_-]{22,})/g,
+    pattern: /sendgrid[_-]?api[_-]?key['"]?\s*[:=]\s*['"]?(SG\.[a-zA-Z0-9_-]{22,})/g,
     severity: 'critical',
     description: 'SendGrid API Key in config',
   },
   {
     name: 'Mailgun API Key (variant)',
-    pattern: /mailgun[_-]?api[_-]?key['\"]?\s*[:=]\s*['\"]?(key-[a-zA-Z0-9]{32})/g,
+    pattern: /mailgun[_-]?api[_-]?key['"]?\s*[:=]\s*['"]?(key-[a-zA-Z0-9]{32})/g,
     severity: 'critical',
     description: 'Mailgun API Key in config',
   },
@@ -1020,13 +1020,13 @@ export const PATTERNS: SecretPattern[] = [
   },
   {
     name: 'Bearer Token in Authorization Header',
-    pattern: /Authorization['\"]?\s*[:=]\s*['\"]?Bearer\s+[a-zA-Z0-9_.-]+['\"]?/g,
+    pattern: /Authorization['"]?\s*[:=]\s*['"]?Bearer\s+[a-zA-Z0-9_.-]+['"]?/g,
     severity: 'warning',
     description: 'Bearer token in Authorization header',
   },
   {
     name: 'API Key in X-API-Key Header',
-    pattern: /X-API-Key['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}['\"]?/g,
+    pattern: /X-API-Key['"]?\s*[:=]\s*['"]?[a-zA-Z0-9_-]{20,}['"]?/g,
     severity: 'warning',
     description: 'API key in X-API-Key header',
   },
@@ -1038,13 +1038,13 @@ export const PATTERNS: SecretPattern[] = [
   },
   {
     name: 'OAuth Access Token Pattern',
-    pattern: /access[_-]?token['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_.-]{40,}['\"]?/g,
+    pattern: /access[_-]?token['"]?\s*[:=]\s*['"]?[a-zA-Z0-9_.-]{40,}['"]?/g,
     severity: 'warning',
     description: 'OAuth access token variable',
   },
   {
     name: 'OAuth Refresh Token Pattern',
-    pattern: /refresh[_-]?token['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_.-]{40,}['\"]?/g,
+    pattern: /refresh[_-]?token['"]?\s*[:=]\s*['"]?[a-zA-Z0-9_.-]{40,}['"]?/g,
     severity: 'warning',
     description: 'OAuth refresh token variable',
   },

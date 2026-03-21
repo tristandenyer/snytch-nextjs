@@ -10,7 +10,6 @@ const mockCreate = vi.hoisted(() => vi.fn());
 vi.mock('@anthropic-ai/sdk', () => ({
   default: class MockAnthropic {
     messages = { create: mockCreate };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     constructor(_opts: unknown) {}
   },
 }));

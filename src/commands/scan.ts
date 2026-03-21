@@ -51,7 +51,6 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
         const regex = patternDef.pattern;
         let match;
 
-        // eslint-disable-next-line no-cond-assign
         while ((match = regex.exec(fileContent)) !== null) {
           const truncatedValue = match[0].substring(0, 8) + '•••';
           const matchKey = `${patternDef.name}|${truncatedValue}|${filePath}`;
