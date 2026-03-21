@@ -4,6 +4,18 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [0.1.2] — 2026-03-21
+
+### Fixed
+
+- Removed **Vault Root Token** pattern (`s\.[a-zA-Z0-9_-]{20,}`) — matched any minified JS property access where the name exceeded 20 characters, producing critical false positives on every Next.js/Turbopack bundle.
+- Removed **Slack Workspace Token** pattern (`T[A-Z0-9]{8,}`) — matched `TURBOPACK` and any uppercase word starting with T, firing a warning on every chunk file. Real Slack secrets are already covered by the xoxb/xoxp/xoxa/webhook patterns.
+- Tightened **Environment Variable with Secret Value** pattern — removed `key` from the keyword list (matched React's minified `Key:` prop), restricted to `=` assignment only (`:` is object literal syntax), cleaned up quote matching. Previously fired on `Key:"UniqueValue"` and similar minified React internals.
+- Report files now written to `snytch-reports/` directory instead of the project root, making them easy to exclude with a single `.gitignore` entry.
+- README usage examples replaced with concrete copy-pasteable commands — the previous `[--option value|other]` synopsis syntax was interpreted as glob patterns by zsh and caused errors when copied directly.
+
+---
+
 ## [0.1.1] — 2026-03-20
 
 ### Added

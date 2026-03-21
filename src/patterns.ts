@@ -1022,7 +1022,7 @@ export const PATTERNS: SecretPattern[] = [
     name: 'Environment Variable with Secret Value',
     pattern: new RegExp("(?:password|secret|token|api_?key)\\s*=\\s*['\"]?[a-zA-Z0-9_!@#$%^&*().-]{12,}['\"]?", "gi"),
     severity: 'warning',
-    description: 'Environment variable assignment with a secret-like name and non-trivial value',
+    description: 'Heuristic match on a secret-like assignment — may be a false positive from URL parsers or framework internals. Confirm no real credential is present.',
   },
   {
     name: 'OAuth Access Token Pattern',
