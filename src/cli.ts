@@ -12,6 +12,7 @@ function parseArgs(): ScanOptions {
   const projectRoot = cwd();
   let dir = projectRoot + '/.next';
   let json = false;
+  let report = false;
   let failOn: 'critical' | 'warning' | 'all' = 'critical';
 
   for (let i = 0; i < args.length; i++) {
@@ -24,6 +25,8 @@ function parseArgs(): ScanOptions {
       i++;
     } else if (arg === '--json') {
       json = true;
+    } else if (arg === '--report') {
+      report = true;
     } else if (arg === '--fail-on' && args[i + 1]) {
       const val = args[i + 1];
       if (val === 'critical' || val === 'warning' || val === 'all') {
@@ -40,7 +43,7 @@ function parseArgs(): ScanOptions {
     process.exit(1);
   }
 
-  return { dir, projectRoot, json, failOn };
+  return { dir, projectRoot, json, report, failOn };
 }
 
 async function main() {

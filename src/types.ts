@@ -29,6 +29,7 @@ export interface ScanOptions {
   dir: string;
   projectRoot: string;
   json: boolean;
+  report: boolean;
   failOn: FailOn;
 }
 

@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { relative } from 'path';
 import { ScanResult, ScanOptions, Finding } from './types.js';
+import { generateReport } from './report.js';
 
 const DIVIDER = '─'.repeat(45);
 
@@ -86,6 +87,10 @@ export function printScanResult(
   }
 
   console.log('');
-  console.log('  run with --report to generate full RCA report');
+  if (options.report) {
+    generateReport(result, options);
+  } else {
+    console.log('  run with --report to generate full RCA report');
+  }
   console.log('');
 }
