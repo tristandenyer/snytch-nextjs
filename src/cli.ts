@@ -5,6 +5,7 @@ import { resolve, basename } from 'path';
 import { scan } from './commands/scan.js';
 import { check } from './commands/check.js';
 import { diff } from './commands/diff.js';
+import { startMcpServer } from './mcp.js';
 import { printScanResult, printCheckResult, printDiffResult } from './output.js';
 import { ScanOptions, CheckOptions, DiffOptions, FailOn, AiProvider } from './types.js';
 import { loadConfig } from './config.js';
@@ -20,11 +21,12 @@ async function main() {
   const command = args[0];
   const projectRoot = cwd();
 
-  if (!command || (command !== 'scan' && command !== 'check' && command !== 'diff')) {
+  if (!command || (command !== 'scan' && command !== 'check' && command !== 'diff' && command !== 'mcp')) {
     console.error('Usage:');
     console.error('  snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none]');
     console.error('  snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|all]');
     console.error('  snytch diff --env .env.staging --env .env.production [--json] [--report] [--strict]');
+    console.error('  snytch mcp');
     console.error('');
     console.error('  --env may be repeated to specify multiple files:');
     console.error('    snytch check --env .env.local --env .env.production');
@@ -138,6 +140,10 @@ async function main() {
       }
 
       process.exit(shouldFail ? 1 : 0);
+
+    } else if (command === 'mcp') {
+      await startMcpServer();
+      // startMcpServer runs until the transport closes — no process.exit needed
     }
   } catch (error) {
     if (error instanceof Error) {
