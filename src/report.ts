@@ -245,6 +245,7 @@ function buildHtml(
       letter-spacing: -0.3px;
     }
 
+    .header-subtitle { font-size: 14px; color: var(--text2); margin-top: 4px; }
     .header-meta {
       font-size: 12px;
       color: var(--text2);
@@ -476,6 +477,7 @@ function buildHtml(
   <div class="header">
     <div class="header-top">
       <h1>snytch report</h1>
+      <p class="header-subtitle">Secrets and sensitive values detected in your Next.js client bundle.</p>
     </div>
     <div class="header-meta">
       commit ${escapeHtml(gitSha)} &nbsp;·&nbsp; ${escapeHtml(timestamp)}
@@ -484,19 +486,11 @@ function buildHtml(
 
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('findings')">Findings</button>
-    <button class="tab-btn" onclick="showTab('drift')">Env Drift</button>
     <button class="tab-btn" onclick="showTab('rca')">AI RCA</button>
   </div>
 
   <div id="tab-findings" class="tab-panel active">
     ${findingsHtml}
-  </div>
-
-  <div id="tab-drift" class="tab-panel">
-    <div class="placeholder">
-      Run <code>snytch diff</code> to populate this tab.<br>
-      Environment drift detection compares key presence across <code>.env</code> files.
-    </div>
   </div>
 
   <div id="tab-rca" class="tab-panel">
@@ -605,6 +599,7 @@ function buildCheckHtml(
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
     .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 20px 32px; }
     .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+    .header-subtitle { font-size: 14px; color: var(--text2); margin-top: 4px; }
     .header-meta { font-size: 12px; color: var(--text2); margin-top: 4px; font-family: var(--mono); }
     .content { padding: 28px 32px; }
     .summary-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
@@ -636,6 +631,7 @@ function buildCheckHtml(
 <body>
   <div class="header">
     <h1>snytch check report</h1>
+    <p class="header-subtitle">NEXT_PUBLIC_ variables that expose secrets or sensitive values to the browser.</p>
     <div class="header-meta">commit ${escapeHtml(gitSha)} &nbsp;·&nbsp; ${escapeHtml(timestamp)} &nbsp;·&nbsp; ${result.scannedFiles} file${result.scannedFiles === 1 ? '' : 's'} scanned</div>
   </div>
   <div class="content">
@@ -691,8 +687,11 @@ function buildDiffHtml(result: DiffResult, gitSha: string, timestamp: string): s
       let present: boolean;
       if (driftEntry) {
         present = driftEntry.presentIn.includes(label);
+      } else if (onlyEntry) {
+        present = onlyEntry.file === label;
       } else {
-        present = onlyEntry!.file === label;
+        // inSync key — present in all environments
+        present = true;
       }
       const mark = present
         ? '<span class="mark-present">✓</span>'
@@ -743,6 +742,7 @@ function buildDiffHtml(result: DiffResult, gitSha: string, timestamp: string): s
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
     .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 20px 32px; }
     .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+    .header-subtitle { font-size: 14px; color: var(--text2); margin-top: 4px; }
     .header-meta { font-size: 12px; color: var(--text2); margin-top: 4px; font-family: var(--mono); }
     .content { padding: 28px 32px; }
     .summary-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
@@ -770,6 +770,7 @@ function buildDiffHtml(result: DiffResult, gitSha: string, timestamp: string): s
 <body>
   <div class="header">
     <h1>snytch diff report</h1>
+    <p class="header-subtitle">Environment variable drift across your .env files — keys that are missing, mismatched, or only present in one environment.</p>
     <div class="header-meta">commit ${escapeHtml(gitSha)} &nbsp;·&nbsp; ${escapeHtml(timestamp)} &nbsp;·&nbsp; ${totalKeys} key${totalKeys === 1 ? '' : 's'} across ${labels.length} files</div>
   </div>
   <div class="content">

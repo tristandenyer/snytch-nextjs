@@ -53,11 +53,19 @@ export interface ScanOptions {
   report: boolean;
   failOn: FailOn;
   aiProvider?: AiProvider;
+  /** Maximum tokens for AI RCA responses. Defaults to 2048. */
+  rcaMaxTokens?: number;
+}
+
+export interface RcaConfig {
+  /** Maximum tokens for the AI RCA response. Defaults to 2048. */
+  maxTokens?: number;
 }
 
 export interface SnytchConfig {
   serverOnly?: string[];
   failOn?: FailOn;
+  rca?: RcaConfig;
 }
 
 export interface ResolvedEnvVar {

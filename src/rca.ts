@@ -91,13 +91,14 @@ Next.js version: ${nextVersion}
 - editorPrompts[0] should be a short prompt for the developer to paste into Cursor/Copilot to auto-apply the fix.
 - editorPrompts[1] should be a short prompt to verify the fix was applied correctly.
 
-Respond with ONLY valid JSON matching this schema (no markdown, no commentary):
+Respond with ONLY valid JSON matching this schema (no markdown, no code fences, no commentary).
+All string values must be on a single line — use \\n for newlines within strings, never literal newlines.
 {
   "what": "string — one sentence: what type of secret leaked",
   "when": "string — when it was likely introduced",
   "how": "string — structural cause: how it ended up in the client bundle",
   "fix": "string — concrete remediation steps",
-  "codeExample": "string — before/after code snippet",
+  "codeExample": "string — before/after code snippet (use \\n for line breaks)",
   "editorPrompts": ["string", "string"]
 }`;
 }
@@ -110,7 +111,7 @@ Respond with ONLY valid JSON matching this schema (no markdown, no commentary):
  * @param options - Finding, project root, and provider config.
  * @returns Parsed RcaResult, or null on any error (API failure, parse error, etc.)
  */
-async function callAnthropic(finding: Finding, projectRoot: string): Promise<RcaResult | null> {
+async function callAnthropic(finding: Finding, projectRoot: string, maxTokens: number): Promise<RcaResult | null> {
   const apiKey = process.env['ANTHROPIC_API_KEY'];
   if (!apiKey) return null;
 
@@ -131,14 +132,15 @@ async function callAnthropic(finding: Finding, projectRoot: string): Promise<Rca
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
+      max_tokens: maxTokens,
       messages: [{ role: 'user', content: prompt }],
     });
 
     const textBlock = message.content.find((b) => b.type === 'text');
     if (!textBlock || textBlock.type !== 'text') return null;
 
-    const raw = textBlock.text.trim();
+    // Strip markdown code fences if the model wrapped the JSON despite instructions
+    const raw = textBlock.text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
     const parsed = JSON.parse(raw) as Partial<RcaResult>;
 
     // Validate required fields
@@ -178,11 +180,13 @@ async function callAnthropic(finding: Finding, projectRoot: string): Promise<Rca
  * @param findings    - Array of all scan findings (only criticals are analysed).
  * @param projectRoot - Absolute project root.
  * @param provider    - AI provider to use.
+ * @param maxTokens   - Maximum tokens for the AI response. Defaults to 2048.
  */
 export async function generateRcaForFindings(
   findings: Finding[],
   projectRoot: string,
   provider: AiProvider,
+  maxTokens = 2048,
 ): Promise<void> {
   if (provider === 'none') return;
 
@@ -198,7 +202,7 @@ export async function generateRcaForFindings(
     }
 
     for (const finding of criticals) {
-      const rca = await callAnthropic(finding, projectRoot);
+      const rca = await callAnthropic(finding, projectRoot, maxTokens);
       if (rca !== null) {
         finding.rca = rca;
       }

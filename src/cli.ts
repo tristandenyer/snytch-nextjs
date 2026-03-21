@@ -5,6 +5,7 @@ import { resolve, basename } from 'path';
 import { scan } from './commands/scan.js';
 import { check } from './commands/check.js';
 import { diff } from './commands/diff.js';
+import { runDemo } from './commands/demo.js';
 import { startMcpServer } from './mcp.js';
 import { printScanResult, printCheckResult, printDiffResult } from './output.js';
 import { ScanOptions, CheckOptions, DiffOptions, FailOn, AiProvider } from './types.js';
@@ -21,11 +22,12 @@ async function main() {
   const command = args[0];
   const projectRoot = cwd();
 
-  if (!command || (command !== 'scan' && command !== 'check' && command !== 'diff' && command !== 'mcp')) {
+  if (!command || (command !== 'scan' && command !== 'check' && command !== 'diff' && command !== 'mcp' && command !== 'demo')) {
     console.error('Usage:');
     console.error('  snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none]');
     console.error('  snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|all]');
     console.error('  snytch diff --env .env.staging --env .env.production [--json] [--report] [--strict]');
+    console.error('  snytch demo');
     console.error('  snytch mcp');
     console.error('');
     console.error('  --env may be repeated to specify multiple files:');
@@ -70,7 +72,9 @@ async function main() {
 
   try {
     if (command === 'scan') {
-      const options: ScanOptions = { dir, projectRoot, json, report, failOn, aiProvider };
+      const config = loadConfig(projectRoot);
+      const rcaMaxTokens = config?.rca?.maxTokens;
+      const options: ScanOptions = { dir, projectRoot, json, report, failOn, aiProvider, rcaMaxTokens };
       const result = await scan(options);
       printScanResult(result, options);
 
@@ -140,6 +144,10 @@ async function main() {
       }
 
       process.exit(shouldFail ? 1 : 0);
+
+    } else if (command === 'demo') {
+      await runDemo(projectRoot);
+      process.exit(1);
 
     } else if (command === 'mcp') {
       await startMcpServer();

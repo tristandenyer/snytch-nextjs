@@ -148,7 +148,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
 
   // Pass 4: AI RCA — only when --report is set, a provider is configured, and findings exist
   if (options.report && options.aiProvider && options.aiProvider !== 'none') {
-    await generateRcaForFindings(findings, options.projectRoot, options.aiProvider);
+    await generateRcaForFindings(findings, options.projectRoot, options.aiProvider, options.rcaMaxTokens);
   }
 
   const durationMs = Date.now() - startTime;
