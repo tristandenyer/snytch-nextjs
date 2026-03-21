@@ -344,35 +344,14 @@ Running snytch in CI catches secrets before they reach production. The scan comm
 The bundle must be built before scanning, so add the scan step after your build step.
 
 ```yaml
-# .github/workflows/security.yml
-name: Security scan
+- name: Build
+  run: npm run build
 
-on:
-  push:
-    branches: [main]
-  pull_request:
+- name: Scan bundle for secrets
+  run: npx @snytch/nextjs scan --fail-on critical
 
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Scan bundle for secrets
-        run: npx @snytch/nextjs scan --fail-on critical
-
-      - name: Check NEXT_PUBLIC_ variables
-        run: npx @snytch/nextjs check --fail-on critical
+- name: Check NEXT_PUBLIC_ variables
+  run: npx @snytch/nextjs check --fail-on critical
 ```
 
 To also check environment drift across your `.env` files, add:
