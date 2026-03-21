@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
 import { cwd } from 'process';
+import { resolve, basename } from 'path';
 import { scan } from './commands/scan.js';
 import { check } from './commands/check.js';
-import { printScanResult, printCheckResult } from './output.js';
-import { ScanOptions, CheckOptions, FailOn } from './types.js';
+import { diff } from './commands/diff.js';
+import { printScanResult, printCheckResult, printDiffResult } from './output.js';
+import { ScanOptions, CheckOptions, DiffOptions, FailOn } from './types.js';
+import { loadConfig } from './config.js';
 
 function parseFailOn(args: string[], i: number): FailOn {
   const val = args[i + 1];
@@ -17,18 +20,21 @@ async function main() {
   const command = args[0];
   const projectRoot = cwd();
 
-  if (!command || (command !== 'scan' && command !== 'check')) {
+  if (!command || (command !== 'scan' && command !== 'check' && command !== 'diff')) {
     console.error('Usage:');
     console.error('  snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all]');
     console.error('  snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|all]');
+    console.error('  snytch diff --env .env.staging --env .env.production [--json] [--report] [--strict]');
     console.error('');
     console.error('  --env may be repeated to specify multiple files:');
     console.error('    snytch check --env .env.local --env .env.production');
+    console.error('    snytch diff  --env .env.staging --env .env.production --env .env.local');
     process.exit(1);
   }
 
   let json = false;
   let report = false;
+  let strict = false;
   let failOn: FailOn = 'critical';
   let dir = projectRoot + '/.next';
   const envFiles: string[] = [];
@@ -39,6 +45,8 @@ async function main() {
       json = true;
     } else if (arg === '--report') {
       report = true;
+    } else if (arg === '--strict') {
+      strict = true;
     } else if (arg === '--fail-on' && args[i + 1]) {
       failOn = parseFailOn(args, i);
       i++;
@@ -78,6 +86,50 @@ async function main() {
       if (failOn === 'critical') shouldFail = result.findings.some((f) => f.severity === 'critical');
       else if (failOn === 'warning') shouldFail = result.findings.some((f) => f.severity === 'critical' || f.severity === 'warning');
       else if (failOn === 'all') shouldFail = result.findings.length > 0;
+      process.exit(shouldFail ? 1 : 0);
+
+    } else if (command === 'diff') {
+      if (envFiles.length < 2) {
+        console.error('Error: snytch diff requires at least two --env flags.');
+        console.error('  Example: snytch diff --env .env.staging --env .env.production');
+        process.exit(1);
+      }
+
+      // Load serverOnly list from config for non-strict exit logic
+      const config = loadConfig(projectRoot);
+      const serverOnly = config?.serverOnly ?? [];
+
+      const resolvedFiles = envFiles.map((p) => ({
+        path: resolve(p),
+        label: basename(p),
+      }));
+
+      const options: DiffOptions = {
+        envFiles: resolvedFiles,
+        projectRoot,
+        json,
+        report,
+        strict,
+        serverOnly,
+      };
+
+      const result = await diff(options);
+      printDiffResult(result, options);
+
+      const outOfSyncCount = result.drift.length + result.onlyInOne.length;
+      let shouldFail = false;
+
+      if (strict) {
+        shouldFail = outOfSyncCount > 0;
+      } else if (serverOnly.length > 0) {
+        // Non-strict: only fail if a serverOnly key is drifted
+        const driftedKeys = new Set([
+          ...result.drift.map((d) => d.key),
+          ...result.onlyInOne.map((o) => o.key),
+        ]);
+        shouldFail = serverOnly.some((k) => driftedKeys.has(k));
+      }
+
       process.exit(shouldFail ? 1 : 0);
     }
   } catch (error) {

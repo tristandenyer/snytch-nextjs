@@ -76,3 +76,35 @@ export interface CheckOptions {
   /** Explicit list of .env file paths to check. When omitted, auto-detect. */
   envFiles?: string[];
 }
+
+// ── Diff types ────────────────────────────────────────────────────────────────
+
+export interface DiffOptions {
+  /** Absolute paths (and display labels) for each env file to compare. Minimum 2. */
+  envFiles: { path: string; label: string }[];
+  projectRoot: string;
+  json: boolean;
+  report: boolean;
+  /**
+   * When true, exit 1 for any drift at all.
+   * When false (default), exit 1 only if a serverOnly key is drifted.
+   */
+  strict: boolean;
+  /** serverOnly key names loaded from snytch.config.js — used for non-strict exit logic. */
+  serverOnly: string[];
+}
+
+export interface DiffResult {
+  /** Labels of the files compared, in input order. */
+  fileLabels: string[];
+  /** Keys present in all files. */
+  inSync: string[];
+  /**
+   * Keys present in some but not all files.
+   * Each entry names which files have the key and which are missing it.
+   */
+  drift: { key: string; presentIn: string[]; missingFrom: string[] }[];
+  /** Keys present in exactly one file. */
+  onlyInOne: { key: string; file: string }[];
+  durationMs: number;
+}

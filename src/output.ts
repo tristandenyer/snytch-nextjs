@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { relative } from 'path';
-import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions } from './types.js';
-import { generateReport, generateCheckReport } from './report.js';
+import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions, DiffResult, DiffOptions } from './types.js';
+import { generateReport, generateCheckReport, generateDiffReport } from './report.js';
 
 const DIVIDER = '─'.repeat(45);
 
@@ -93,6 +93,136 @@ export function printScanResult(
     console.log('  run with --report to generate full RCA report');
   }
   console.log('');
+}
+
+// ── Diff output ───────────────────────────────────────────────────────────────
+
+/**
+ * Print a formatted diff table to stdout.
+ *
+ * Sort order: drifted/onlyInOne keys first (alphabetical within that group),
+ * then inSync keys alphabetically.
+ *
+ * Values are never printed — key presence only.
+ *
+ * @param result - The structured diff result.
+ * @param options - CLI options controlling JSON/report mode and strict flag.
+ */
+export function printDiffResult(result: DiffResult, options: DiffOptions): void {
+  if (options.json) {
+    console.log(
+      JSON.stringify(
+        {
+          fileLabels: result.fileLabels,
+          inSync: result.inSync,
+          drift: result.drift,
+          onlyInOne: result.onlyInOne,
+          durationMs: result.durationMs,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  const totalKeys =
+    result.inSync.length + result.drift.length + result.onlyInOne.length;
+  const outOfSyncCount = result.drift.length + result.onlyInOne.length;
+  const labels = result.fileLabels;
+
+  // ── Header ─────────────────────────────────────────────────────────────────
+  console.log('');
+  console.log(
+    `  Comparing ${labels.length} environments · ${totalKeys} total key${totalKeys === 1 ? '' : 's'}`,
+  );
+  console.log('');
+  if (outOfSyncCount === 0) {
+    console.log(chalk.green(`  IN SYNC (${result.inSync.length})`));
+  } else {
+    console.log(
+      chalk.green(`  IN SYNC (${result.inSync.length})`) +
+        '     ' +
+        chalk.red(`DRIFT (${outOfSyncCount})`),
+    );
+  }
+  console.log('');
+
+  // ── Table header ───────────────────────────────────────────────────────────
+  const varColWidth = Math.max(
+    20,
+    ...result.inSync.map((k) => k.length),
+    ...result.drift.map((d) => d.key.length),
+    ...result.onlyInOne.map((o) => o.key.length),
+  ) + 2;
+
+  // File label columns — at least 14 chars wide
+  const colWidths = labels.map((l) => Math.max(14, l.length + 2));
+
+  const headerVar = 'variable'.padEnd(varColWidth);
+  const headerFiles = labels.map((l, i) => l.padEnd(colWidths[i])).join('  ');
+  console.log(`  ${chalk.dim(headerVar)}  ${chalk.dim(headerFiles)}`);
+
+  const dividerWidth = varColWidth + colWidths.reduce((s, w) => s + w + 2, 0) + 4;
+  console.log(`  ${'─'.repeat(dividerWidth)}`);
+
+  // ── Rows: drifted/onlyInOne first, then inSync ─────────────────────────────
+  const driftedKeys = [
+    ...result.drift.map((d) => d.key),
+    ...result.onlyInOne.map((o) => o.key),
+  ].sort();
+
+  for (const key of driftedKeys) {
+    const driftEntry = result.drift.find((d) => d.key === key);
+    const onlyEntry = result.onlyInOne.find((o) => o.key === key);
+
+    const cells = labels.map((label, i) => {
+      let present: boolean;
+      if (driftEntry) {
+        present = driftEntry.presentIn.includes(label);
+      } else {
+        // onlyInOne
+        present = onlyEntry!.file === label;
+      }
+
+      const mark = present ? chalk.green('✓') : chalk.red('✗');
+      const note =
+        !present
+          ? chalk.dim(` ← MISSING IN ${label.toUpperCase()}`)
+          : '';
+
+      return mark.padEnd(colWidths[i]) + note;
+    });
+
+    console.log(`  ${chalk.yellow(key.padEnd(varColWidth))}  ${cells.join('  ')}`);
+  }
+
+  // Separator between drifted and in-sync
+  if (driftedKeys.length > 0 && result.inSync.length > 0) {
+    console.log(`  ${'─'.repeat(dividerWidth)}`);
+  }
+
+  for (const key of result.inSync) {
+    const cells = labels.map((_label, i) =>
+      chalk.green('✓').padEnd(colWidths[i]),
+    );
+    console.log(`  ${key.padEnd(varColWidth)}  ${cells.join('  ')}`);
+  }
+
+  console.log('');
+
+  // ── Summary footer ─────────────────────────────────────────────────────────
+  if (outOfSyncCount === 0) {
+    console.log(chalk.green('  ✓ all variables in sync across all environments'));
+  } else {
+    console.log(chalk.red(`  ${outOfSyncCount} variable${outOfSyncCount === 1 ? '' : 's'} out of sync.`));
+  }
+  console.log(chalk.dim('  values are never compared — key presence only'));
+  console.log('');
+
+  if (options.report) {
+    generateDiffReport(result, options);
+  }
 }
 
 export function printCheckResult(

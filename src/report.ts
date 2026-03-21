@@ -1,7 +1,7 @@
 import { writeFileSync } from 'fs';
 import { join, relative } from 'path';
 import { execSync } from 'child_process';
-import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions, CheckFinding } from './types.js';
+import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions, CheckFinding, DiffResult, DiffOptions } from './types.js';
 
 function getGitSha(projectRoot: string): string {
   try {
@@ -521,6 +521,169 @@ export function generateCheckReport(
     execSync(`${cmd} "${outputPath}"`, { stdio: 'ignore' });
   } catch {
     // Browser open failed — user can open manually
+  }
+}
+
+// ── Diff report ───────────────────────────────────────────────────────────────
+
+function buildDiffHtml(result: DiffResult, gitSha: string, timestamp: string): string {
+  const totalKeys = result.inSync.length + result.drift.length + result.onlyInOne.length;
+  const outOfSyncCount = result.drift.length + result.onlyInOne.length;
+  const labels = result.fileLabels;
+
+  // Build drifted key rows
+  const driftedKeys = [
+    ...result.drift.map((d) => d.key),
+    ...result.onlyInOne.map((o) => o.key),
+  ].sort();
+
+  function renderRow(key: string, isDrifted: boolean): string {
+    const driftEntry = result.drift.find((d) => d.key === key);
+    const onlyEntry = result.onlyInOne.find((o) => o.key === key);
+
+    const cells = labels.map((label) => {
+      let present: boolean;
+      if (driftEntry) {
+        present = driftEntry.presentIn.includes(label);
+      } else {
+        present = onlyEntry!.file === label;
+      }
+      const mark = present
+        ? '<span class="mark-present">✓</span>'
+        : '<span class="mark-missing">✗ <small>missing</small></span>';
+      return `<td>${mark}</td>`;
+    }).join('');
+
+    const rowClass = isDrifted ? 'row-drift' : '';
+    return `<tr class="${rowClass}"><td class="key-cell">${escapeHtml(key)}</td>${cells}</tr>`;
+  }
+
+  const theadCols = labels.map((l) => `<th>${escapeHtml(l)}</th>`).join('');
+  const driftRows = driftedKeys.map((k) => renderRow(k, true)).join('');
+  const syncRows = result.inSync.map((k) => renderRow(k, false)).join('');
+  const dividerRow = driftedKeys.length > 0 && result.inSync.length > 0
+    ? `<tr class="divider-row"><td colspan="${labels.length + 1}"></td></tr>`
+    : '';
+
+  const statusHtml = outOfSyncCount === 0
+    ? `<div class="status-clean"><span class="clean-check">✓</span> All ${totalKeys} variable${totalKeys === 1 ? '' : 's'} in sync across all environments.</div>`
+    : `<div class="status-drift">${outOfSyncCount} variable${outOfSyncCount === 1 ? '' : 's'} out of sync.</div>`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>snytch diff report</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff; --bg2: #f6f8fa; --bg3: #eaeef2; --border: #d0d7de;
+      --text: #1f2328; --text2: #636c76;
+      --critical: #cf222e; --critical-bg: #fff0ee;
+      --warning: #9a6700; --warning-bg: #fffbe5;
+      --green: #1a7f37; --green-bg: #dafbe1;
+      --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
+        --text: #e6edf3; --text2: #8b949e;
+        --critical: #ff7b72; --critical-bg: #2d1115;
+        --warning: #e3b341; --warning-bg: #2d2000;
+        --green: #3fb950; --green-bg: #0d2a17;
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+    .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 20px 32px; }
+    .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+    .header-meta { font-size: 12px; color: var(--text2); margin-top: 4px; font-family: var(--mono); }
+    .content { padding: 28px 32px; }
+    .summary-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .summary-card { flex: 1; min-width: 100px; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; background: var(--bg2); }
+    .summary-count { font-size: 28px; font-weight: 600; line-height: 1; }
+    .summary-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+    .summary-sync .summary-count { color: var(--green); }
+    .summary-drift .summary-count { color: var(--critical); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+    th { background: var(--bg2); padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); color: var(--text2); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .key-cell { font-family: var(--mono); font-size: 12px; }
+    tr.row-drift td { background: var(--warning-bg); }
+    tr.row-drift .key-cell { color: var(--warning); font-weight: 600; }
+    tr.divider-row td { height: 8px; background: var(--bg2); border: none; }
+    .mark-present { color: var(--green); font-weight: 600; }
+    .mark-missing { color: var(--critical); font-weight: 600; }
+    .mark-missing small { font-size: 10px; font-weight: normal; color: var(--text2); }
+    .status-clean { padding: 16px 20px; background: var(--green-bg); border: 1px solid var(--green); border-radius: 8px; color: var(--green); font-size: 15px; font-weight: 500; margin-bottom: 16px; }
+    .status-drift { padding: 16px 20px; background: var(--critical-bg); border: 1px solid var(--critical); border-radius: 8px; color: var(--critical); font-size: 15px; font-weight: 500; margin-bottom: 16px; }
+    .clean-check { font-size: 18px; }
+    .footer-note { font-size: 12px; color: var(--text2); margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>snytch diff report</h1>
+    <div class="header-meta">commit ${escapeHtml(gitSha)} &nbsp;·&nbsp; ${escapeHtml(timestamp)} &nbsp;·&nbsp; ${totalKeys} key${totalKeys === 1 ? '' : 's'} across ${labels.length} files</div>
+  </div>
+  <div class="content">
+    <div class="summary-row">
+      <div class="summary-card summary-sync">
+        <div class="summary-count">${result.inSync.length}</div>
+        <div class="summary-label">in sync</div>
+      </div>
+      <div class="summary-card summary-drift">
+        <div class="summary-count">${outOfSyncCount}</div>
+        <div class="summary-label">out of sync</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-count">${totalKeys}</div>
+        <div class="summary-label">total keys</div>
+      </div>
+    </div>
+    ${statusHtml}
+    <table>
+      <thead>
+        <tr><th>variable</th>${theadCols}</tr>
+      </thead>
+      <tbody>
+        ${driftRows}
+        ${dividerRow}
+        ${syncRows}
+      </tbody>
+    </table>
+    <div class="footer-note">values are never compared — key presence only</div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Write a self-contained HTML diff report to snytch-diff-report.html and
+ * attempt to open it in the default browser.
+ *
+ * @param result  - The structured diff result.
+ * @param options - CLI options including projectRoot.
+ */
+export function generateDiffReport(result: DiffResult, options: DiffOptions): void {
+  const gitSha = getGitSha(options.projectRoot);
+  const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  const outputPath = join(options.projectRoot, 'snytch-diff-report.html');
+
+  const html = buildDiffHtml(result, gitSha, timestamp);
+  writeFileSync(outputPath, html, 'utf-8');
+
+  console.log(`  report written to ${relative(options.projectRoot, outputPath)}`);
+
+  try {
+    const platform = process.platform;
+    const cmd =
+      platform === 'darwin' ? 'open' :
+      platform === 'win32'  ? 'start' :
+                              'xdg-open';
+    execSync(`${cmd} "${outputPath}"`, { stdio: 'ignore' });
+  } catch {
+    // Browser open failed — user can open the file manually
   }
 }
 
