@@ -272,12 +272,6 @@ export const PATTERNS: SecretPattern[] = [
     severity: 'critical',
     description: 'Slack Incoming Webhook URL',
   },
-  {
-    name: 'Slack Workspace Token',
-    pattern: /T[A-Z0-9]{8,}/g,
-    severity: 'warning',
-    description: 'Potential Slack Workspace ID',
-  },
 
   // Twilio (Category 8)
   {
@@ -453,12 +447,6 @@ export const PATTERNS: SecretPattern[] = [
     pattern: /hvs\.[a-zA-Z0-9_-]{20,}/g,
     severity: 'critical',
     description: 'HashiCorp Vault service token',
-  },
-  {
-    name: 'Vault Root Token',
-    pattern: /s\.[a-zA-Z0-9_-]{20,}/g,
-    severity: 'critical',
-    description: 'Vault root or manual token',
   },
 
   // Okta (Category 25)
@@ -1032,9 +1020,9 @@ export const PATTERNS: SecretPattern[] = [
   },
   {
     name: 'Environment Variable with Secret Value',
-    pattern: new RegExp("(?:password|secret|token|key)['\"']?\\s*[:=]\\s*['\"']?[a-zA-Z0-9_!@#$%^&*().-]{12,}['\"']?", "gi"),
+    pattern: new RegExp("(?:password|secret|token|api_?key)\\s*=\\s*['\"]?[a-zA-Z0-9_!@#$%^&*().-]{12,}['\"]?", "gi"),
     severity: 'warning',
-    description: 'Environment variable with secret-like name and value',
+    description: 'Environment variable assignment with a secret-like name and non-trivial value',
   },
   {
     name: 'OAuth Access Token Pattern',
