@@ -132,7 +132,7 @@ jobs:
               '```bash',
               'npx @snytch/nextjs scan --report --ai-provider anthropic',
               '```',
-              'This generates `snytch-report.html` with full root cause analysis for each finding.',
+              'This generates `snytch-reports/snytch-report.html` with full root cause analysis for each finding.',
             ].join('\n');
 
             await github.rest.issues.createComment({
@@ -153,7 +153,7 @@ jobs:
           path: |
             snytch-results.json
             snytch-diff.json
-            snytch-report.html
+            snytch-reports/
           if-no-files-found: ignore
           retention-days: 30
 
