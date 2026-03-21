@@ -1,7 +1,14 @@
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 import { join, relative } from 'path';
 import { execSync } from 'child_process';
 import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions, CheckFinding, DiffResult, DiffOptions, RcaResult } from './types.js';
+
+/** Returns (and creates if needed) the snytch-reports/ output directory. */
+function reportsDir(projectRoot: string): string {
+  const dir = join(projectRoot, 'snytch-reports');
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
 
 function getGitSha(projectRoot: string): string {
   try {
@@ -647,7 +654,7 @@ export function generateCheckReport(
 ): void {
   const gitSha = getGitSha(options.projectRoot);
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-  const outputPath = join(options.projectRoot, 'snytch-check-report.html');
+  const outputPath = join(reportsDir(options.projectRoot), 'snytch-check-report.html');
 
   const html = buildCheckHtml(result, gitSha, timestamp);
   writeFileSync(outputPath, html, 'utf-8');
@@ -815,7 +822,7 @@ function buildDiffHtml(result: DiffResult, gitSha: string, timestamp: string): s
 export function generateDiffReport(result: DiffResult, options: DiffOptions): void {
   const gitSha = getGitSha(options.projectRoot);
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-  const outputPath = join(options.projectRoot, 'snytch-diff-report.html');
+  const outputPath = join(reportsDir(options.projectRoot), 'snytch-diff-report.html');
 
   const html = buildDiffHtml(result, gitSha, timestamp);
   writeFileSync(outputPath, html, 'utf-8');
@@ -840,7 +847,7 @@ export function generateReport(
 ): void {
   const gitSha = getGitSha(options.projectRoot);
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-  const outputPath = join(options.projectRoot, 'snytch-report.html');
+  const outputPath = join(reportsDir(options.projectRoot), 'snytch-report.html');
 
   const html = buildHtml(result, options, gitSha, timestamp);
   writeFileSync(outputPath, html, 'utf-8');

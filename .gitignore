@@ -26,6 +26,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Claude Code instructions (private dev tooling)
+CLAUDE.md
+
 # Test coverage
 coverage/
 .nyc_output/
@@ -35,5 +38,5 @@ coverage/
 *.temp
 
 # snytch report output
-snytch-report-*.html
+snytch-reports/
 snytch-results.json

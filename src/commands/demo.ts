@@ -10,8 +10,8 @@
  */
 
 import { createInterface } from 'readline';
-import { existsSync, unlinkSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync, rmSync } from 'fs';
+import { resolve, join } from 'path';
 import chalk from 'chalk';
 import { printScanResult, printCheckResult, printDiffResult } from '../output.js';
 import { generateReport, generateCheckReport, generateDiffReport } from '../report.js';
@@ -246,7 +246,7 @@ function askYesNo(question: string): Promise<boolean> {
  * @returns A promise that resolves when the demo is complete.
  */
 export async function runDemo(projectRoot: string): Promise<void> {
-  const reportPath = resolve(projectRoot, 'snytch-report.html');
+  const reportsDir = join(resolve(projectRoot), 'snytch-reports');
 
   // ── Intro ──────────────────────────────────────────────────────────────────
   console.log('');
@@ -298,8 +298,8 @@ export async function runDemo(projectRoot: string): Promise<void> {
   generateCheckReport(CHECK_RESULT, reportCheckOptions);
   generateDiffReport(DIFF_RESULT, reportDiffOptions);
 
-  console.log(chalk.green(`  ✓ report written → ${reportPath}`));
-  console.log(chalk.dim('  Open it in a browser to see the full HTML report.'));
+  console.log(chalk.green(`  ✓ reports written → ${reportsDir}/`));
+  console.log(chalk.dim('  Open any report in a browser to see the full HTML output.'));
 
   // ── Footer ─────────────────────────────────────────────────────────────────
   console.log('');
@@ -308,15 +308,15 @@ export async function runDemo(projectRoot: string): Promise<void> {
   console.log('');
 
   // ── Cleanup prompt ─────────────────────────────────────────────────────────
-  if (existsSync(reportPath)) {
+  if (existsSync(reportsDir)) {
     const del = await askYesNo(
-      chalk.dim('  Delete snytch-report.html? [y/N] '),
+      chalk.dim('  Delete snytch-reports/? [y/N] '),
     );
     if (del) {
-      unlinkSync(reportPath);
-      console.log(chalk.dim('  snytch-report.html deleted.'));
+      rmSync(reportsDir, { recursive: true });
+      console.log(chalk.dim('  snytch-reports/ deleted.'));
     } else {
-      console.log(chalk.dim(`  Report kept at: ${reportPath}`));
+      console.log(chalk.dim(`  Reports kept at: ${reportsDir}/`));
     }
   }
 

@@ -1,8 +1,29 @@
 # @snytch/nextjs
 
+![beta](https://img.shields.io/badge/status-beta-orange)
+[![npm version](https://img.shields.io/npm/v/@snytch/nextjs)](https://www.npmjs.com/package/@snytch/nextjs)
+[![npm downloads](https://img.shields.io/npm/dm/@snytch/nextjs)](https://www.npmjs.com/package/@snytch/nextjs)
+[![Node.js >=18](https://img.shields.io/node/v/@snytch/nextjs)](https://nodejs.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 Bundle scanning, secret detection, and environment exposure analysis for Next.js applications.
 
+## Why we all need this
+
+With Next.js, an environment variable without the `NEXT_PUBLIC_` prefix can still end up in a client bundle if it's imported by a shared module, a utility function, or a component that renders on both server and client. By the time it's in production, it's in every visitor's browser, your build artifacts, your CDN cache, and potentially your git history.
+
+The scale of this problem is larger than most teams realize. According to [GitGuardian's 2026 State of Secrets Sprawl Report](https://www.gitguardian.com/state-of-secrets-sprawl-report-2026), codebases leaked 28.6 million secrets in public GitHub repositories in 2025 alone, a 34% year-over-year increase. More concerning: 64% of secrets from 2022 are still exploitable today.
+
+`@snytch/nextjs` scans your compiled bundle, checks your `.env` files, and compares your environments to catch these issues before they reach production.
+
+## Requirements
+
+- Node.js 18 or later
+- A Next.js project with an existing build (`.next/` directory) for `snytch scan`
+
 ## Installation
+
+`@snytch/nextjs` works best on established Next.js projects that already have a build in place. Run `npm run build` first to generate the `.next` directory, then install and scan.
 
 ```bash
 npm install -D @snytch/nextjs
@@ -18,17 +39,19 @@ Scan the compiled Next.js bundle for leaked secrets in client-side JavaScript.
 snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none]
 ```
 
-| Option | Default | Description |
-|---|---|---|
-| `--dir` | `./.next` | Path to the `.next` directory |
-| `--json` | off | Output results as JSON |
-| `--report` | off | Generate an HTML report at `./snytch-report.html` |
-| `--fail-on` | `critical` | Exit code threshold: `critical`, `warning`, or `all` |
+| Option          | Default     | Description                                                                                                   |
+| --------------- | ----------- | ------------------------------------------------------------------------------------------------------------- |
+| `--dir`         | `./.next`   | Path to the `.next` directory                                                                                 |
+| `--json`        | off         | Output results as JSON                                                                                        |
+| `--report`      | off         | Generate an HTML report at `./snytch-reports/snytch-report.html`                                              |
+| `--fail-on`     | `critical`  | Exit code threshold: `critical`, `warning`, or `all`                                                          |
 | `--ai-provider` | `anthropic` | AI RCA provider: `anthropic` (requires `ANTHROPIC_API_KEY`) or `openai` (requires `OPENAI_API_KEY`) or `none` |
+
+![Scan report showing detected secrets, severity levels, file paths, and git provenance](./docs/screenshots/snytch-report-findings.png)
 
 ### `snytch check`
 
-Check `.env` files for `NEXT_PUBLIC_` variables that look like secrets.
+Check `.env` files for `NEXT_PUBLIC_` variables that look like secrets. Any variable prefixed with `NEXT_PUBLIC_` is embedded into the client bundle at build time and sent to every browser that loads your app. This command flags values that match known secret patterns or look high-entropy enough to be credentials.
 
 ```bash
 snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|all]
@@ -40,9 +63,18 @@ snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|
 snytch check --env .env.local --env .env.production
 ```
 
+| Option      | Default       | Description                                             |
+| ----------- | ------------- | ------------------------------------------------------- |
+| `--env`     | auto-detected | Path to a `.env` file. Repeat for multiple files.       |
+| `--json`    | off           | Output results as JSON                                  |
+| `--report`  | off           | Generate an HTML report at `./snytch-reports/snytch-check-report.html` |
+| `--fail-on` | `critical`    | Exit code threshold: `critical`, `warning`, or `all`    |
+
 ### `snytch diff`
 
-Compare environment variable key presence across two or more `.env` files.
+Compare environment variable key presence across two or more `.env` files. "Drift" means a key exists in one environment but not another. This is how secrets get misconfigured in production: a key is added to `.env.local` during development and never makes it into `.env.production`, or a key is removed from one file but not the others.
+
+`snytch diff` only compares key names, never values. It tells you what is missing or mismatched, not what the values are.
 
 ```bash
 snytch diff --env .env.staging --env .env.production [--json] [--report] [--strict]
@@ -54,13 +86,18 @@ snytch diff --env .env.staging --env .env.production [--json] [--report] [--stri
 snytch diff --env .env.staging --env .env.production --env .env.local
 ```
 
-| Option | Default | Description |
-|---|---|---|
-| `--strict` | off | Exit 1 for any drift, not just `serverOnly` keys |
+| Option     | Default  | Description                                             |
+| ---------- | -------- | ------------------------------------------------------- |
+| `--env`    | required | Path to a `.env` file. Must be provided at least twice. |
+| `--json`   | off      | Output results as JSON                                  |
+| `--report` | off      | Generate an HTML report at `./snytch-reports/snytch-diff-report.html`  |
+| `--strict` | off      | Exit 1 for any drift, not just `serverOnly` keys        |
+
+![Diff report showing environment variable drift across .env files, with keys that are missing or only present in one environment](./docs/screenshots/snytch-diff-report.png)
 
 ### `snytch mcp`
 
-Start the snytch MCP server on stdio transport. Exposes `snytch_scan`, `snytch_check`, and `snytch_diff` as tools inside any MCP-compatible editor.
+Start the snytch MCP server on stdio transport. You don't run this directly. Your editor runs it for you based on the config file you provide. See [MCP Server](#mcp-server) below for setup instructions.
 
 ```bash
 snytch mcp
@@ -70,7 +107,7 @@ snytch mcp
 
 ### `snytch demo`
 
-Runs a fully synthetic end-to-end demonstration of all three commands — `scan`, `check`, and `diff` — using fake findings that cover the full range of severity levels and pattern types. Output is identical to a real run: the same formatters, the same exit code (1), and real HTML reports written to disk.
+Runs a fully synthetic end-to-end demonstration of all three commands (`scan`, `check`, and `diff`) using fake findings that cover the full range of severity levels and pattern types. Output is identical to a real run: the same formatters, the same exit code (1), and real HTML reports written to disk.
 
 ```bash
 snytch demo
@@ -78,11 +115,17 @@ snytch demo
 
 Three report files are generated in your current directory:
 
-| File | Contents |
-|---|---|
-| `snytch-report.html` | Bundle scan findings with Findings and AI RCA tabs |
-| `snytch-check-report.html` | `NEXT_PUBLIC_` exposure findings |
-| `snytch-diff-report.html` | Environment variable drift across `.env` files |
+| File                                        | Contents                                           |
+| ------------------------------------------- | -------------------------------------------------- |
+| `snytch-reports/snytch-report.html`         | Bundle scan findings with Findings and AI RCA tabs |
+| `snytch-reports/snytch-check-report.html`   | `NEXT_PUBLIC_` exposure findings                   |
+| `snytch-reports/snytch-diff-report.html`    | Environment variable drift across `.env` files     |
+
+> Add this to your `.gitignore` to avoid committing the reports directory:
+>
+> ```
+> snytch-reports/
+> ```
 
 To see the AI RCA tab populated with real analysis, set an API key before running:
 
@@ -95,6 +138,8 @@ OPENAI_API_KEY=sk-... snytch demo --ai-provider openai
 ```
 
 You will be prompted to delete the generated report files when the demo completes.
+
+![AI RCA tab: Claude or GPT-4o explains what leaked, when it was introduced, how it ended up in the bundle, and how to fix it, with a before/after code example and editor prompts](./docs/screenshots/snytch-report-ai-rca.png)
 
 ---
 
@@ -119,19 +164,28 @@ You will be prompted to delete the generated report files when the demo complete
 
 ## MCP Server
 
-`@snytch/nextjs` ships an [MCP](https://modelcontextprotocol.io) server that exposes three tools to AI editors. Secret values are **never** transmitted — all findings use truncated values only.
+`@snytch/nextjs` includes an [MCP](https://modelcontextprotocol.io) server so you can run scans directly from inside Cursor, Windsurf, or Claude Desktop without touching a terminal.
+
+Once configured, you can ask your AI assistant things like:
+
+- "Scan my bundle for leaked secrets"
+- "Check my .env files for exposed API keys"
+- "Are my staging and production env files in sync?"
+
+The assistant gets structured results back and can propose fixes inline, in the files where the problem lives. Secret values are never transmitted through the MCP layer - only truncated values are passed to the AI.
 
 ### Tools
 
-| Tool | Description |
-|---|---|
-| `snytch_scan` | Scan the Next.js bundle for leaked secrets in client-side JS |
-| `snytch_check` | Check `.env` files for dangerous `NEXT_PUBLIC_` prefix usage |
-| `snytch_diff` | Compare environment variable key presence across `.env` files |
+| Tool           | Description                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `snytch_scan`  | Scan the Next.js bundle for leaked secrets in client-side JS  |
+| `snytch_check` | Check `.env` files for dangerous `NEXT_PUBLIC_` prefix usage  |
+| `snytch_diff`  | Compare environment variable key presence across `.env` files |
 
 ### Tool schemas
 
 **`snytch_scan`**
+
 ```jsonc
 // Input
 { "dir": "./.next" }   // optional — defaults to <cwd>/.next
@@ -144,6 +198,7 @@ You will be prompted to delete the generated report files when the demo complete
 ```
 
 **`snytch_check`**
+
 ```jsonc
 // Input
 { "envFiles": [".env.local", ".env.production"] }  // optional — auto-detects from cwd
@@ -156,6 +211,7 @@ You will be prompted to delete the generated report files when the demo complete
 ```
 
 **`snytch_diff`**
+
 ```jsonc
 // Input
 { "envFiles": [".env.staging", ".env.production"] }  // required — minimum 2 files
@@ -168,22 +224,14 @@ You will be prompted to delete the generated report files when the demo complete
 }
 ```
 
-### Editor configuration
+### Editor setup
 
-#### Cursor — `.cursor/mcp.json`
+The MCP server runs in the directory where your editor is opened, so it automatically picks up the correct `.next` directory and `.env` files for your project. No path configuration needed.
 
-```json
-{
-  "mcpServers": {
-    "snytch": {
-      "command": "npx",
-      "args": ["-y", "@snytch/nextjs", "mcp"]
-    }
-  }
-}
-```
+#### Cursor
 
-#### Windsurf — `~/.codeium/windsurf/mcp_config.json`
+1. Open (or create) `.cursor/mcp.json` in your project root.
+2. Add the following:
 
 ```json
 {
@@ -196,7 +244,13 @@ You will be prompted to delete the generated report files when the demo complete
 }
 ```
 
-#### Claude Desktop — `~/Library/Application Support/Claude/claude_desktop_config.json`
+3. Open the Cursor Settings panel, go to **MCP**, and confirm `snytch` appears with a green status indicator.
+4. Open a chat and try: _"Use snytch to scan my bundle for leaked secrets."_
+
+#### Windsurf
+
+1. Open `~/.codeium/windsurf/mcp_config.json` (create it if it doesn't exist).
+2. Add the following:
 
 ```json
 {
@@ -209,23 +263,61 @@ You will be prompted to delete the generated report files when the demo complete
 }
 ```
 
-> **Tip:** The MCP server runs in the directory where the editor is opened, so it automatically uses the correct `.next` directory and `.env` files for your project.
+3. Open the Windsurf MCP panel and click **Refresh** to pick up the new server.
+4. Open a Cascade chat and try: _"Check my .env files for exposed API keys."_
+
+#### Claude Desktop
+
+1. Open the Claude Desktop config file for your platform (create it if it doesn't exist):
+
+   | Platform | Path |
+   | -------- | ---- |
+   | macOS    | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+   | Windows  | `%APPDATA%\Claude\claude_desktop_config.json` |
+   | Linux    | `~/.config/Claude/claude_desktop_config.json` |
+
+2. Add the following:
+
+```json
+{
+  "mcpServers": {
+    "snytch": {
+      "command": "npx",
+      "args": ["-y", "@snytch/nextjs", "mcp"]
+    }
+  }
+}
+```
+
+3. Quit and relaunch Claude Desktop.
+4. Click the tools icon in the chat input to confirm `snytch_scan`, `snytch_check`, and `snytch_diff` are listed.
+5. Try: _"Scan my Next.js bundle for secrets."_
 
 ---
 
 ## Configuration
 
-Create `snytch.config.js` in your project root to mark specific environment variables as server-only:
+Create `snytch.config.js` in your project root to customize snytch's behavior. The file must use ESM syntax since `@snytch/nextjs` is an ESM package.
 
 ```js
 // snytch.config.js
 export default {
   serverOnly: ['DATABASE_URL', 'STRIPE_SECRET_KEY', 'NEXTAUTH_SECRET'],
   failOn: 'critical',
+  rca: {
+    maxTokens: 2048,
+  },
 };
 ```
 
+| Option          | Type                               | Description                                                                                 |
+| --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------- |
+| `serverOnly`    | `string[]`                         | Variable names that must never be exposed to the client                                     |
+| `failOn`        | `'critical' \| 'warning' \| 'all'` | Default exit code threshold for all commands                                                |
+| `rca.maxTokens` | `number`                           | Max tokens for AI RCA responses (default: 2048). Increase if responses are being truncated. |
+
 When `serverOnly` is set:
+
 - `snytch check` will flag any listed key that appears under `NEXT_PUBLIC_`
 - `snytch diff` will exit 1 in non-strict mode if a `serverOnly` key has drifted
 - `snytch scan` will detect literal values of these variables in the bundle
@@ -234,11 +326,50 @@ When `serverOnly` is set:
 
 ## CI/CD integration
 
+Running snytch in CI catches secrets before they reach production. The scan command exits with code 1 when findings at or above the specified severity are found, so it works as a pipeline gate without any extra configuration.
+
+The bundle must be built before scanning, so add the scan step after your build step.
+
 ```yaml
 # .github/workflows/security.yml
-- name: Scan Next.js bundle for secrets
-  run: npx @snytch/nextjs scan --json --fail-on critical
+name: Security scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Scan bundle for secrets
+        run: npx @snytch/nextjs scan --fail-on critical
+
+      - name: Check NEXT_PUBLIC_ variables
+        run: npx @snytch/nextjs check --fail-on critical
 ```
+
+To also check environment drift across your `.env` files, add:
+
+```yaml
+- name: Diff env files
+  run: npx @snytch/nextjs diff --env .env.staging --env .env.production
+```
+
+> The `diff` step requires your `.env` files to be present in the CI environment. If they are not checked into the repo, you will need to write them from secrets before this step runs.
 
 ---
 

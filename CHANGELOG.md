@@ -4,6 +4,27 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [0.1.1] — 2026-03-20
+
+### Added
+
+- **OpenAI provider support** — `--ai-provider openai` now generates AI RCA using GPT-4o when `OPENAI_API_KEY` is set. The provider accepts either `ANTHROPIC_API_KEY` (Claude) or `OPENAI_API_KEY` (GPT-4o); behaviour is identical from the user's perspective.
+- `rca.maxTokens` config option in `snytch.config.js` — allows projects to override the default 2048-token cap for AI RCA responses.
+- HTML report subtitles — each report heading now includes a one-line description of what the report covers.
+- `snytch demo` documented in README with instructions for running with a real API key to populate the AI RCA tab.
+
+### Changed
+
+- Removed the **Env Drift** tab from `snytch-report.html` — it was structurally unpopulable from `snytch scan` and was always shown empty.
+- Updated `--ai-provider` description in README to list all three values (`anthropic`, `openai`, `none`) and their required env vars.
+
+### Fixed
+
+- AI RCA JSON parse failures caused by the model returning literal newlines inside string values — prompt now explicitly requires `\n` escape sequences, and `max_tokens` raised from 1024 → 2048 to prevent mid-response truncation.
+- Markdown code fences in model responses are stripped before `JSON.parse` to handle models that wrap output despite instructions.
+
+---
+
 ## [0.1.0] — 2026-03-20
 
 Initial release, built across three phases.
