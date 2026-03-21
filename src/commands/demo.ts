@@ -293,8 +293,10 @@ export async function runDemo(projectRoot: string): Promise<void> {
   console.log(chalk.dim('  No real files are scanned. This output is identical to a live run.'));
 
   // ── Section 1: scan ────────────────────────────────────────────────────────
-  banner('snytch scan  ·  bundle secret detection');
+  banner('snytch scan  ·  bundle + source map secret detection');
   printScanResult(SCAN_RESULT, SCAN_OPTIONS);
+  console.log(chalk.dim('  Source map findings ([source map]) are always [WARN] — the value may'));
+  console.log(chalk.dim('  not be reachable in the live bundle, but was present at build time.'));
 
   // ── Section 2: check ──────────────────────────────────────────────────────
   banner('snytch check  ·  NEXT_PUBLIC_ exposure detection');
