@@ -1,5 +1,5 @@
 export type Severity = 'critical' | 'warning' | 'info';
-export type FindingType = 'pattern-match' | 'value-match';
+export type FindingType = 'pattern-match' | 'value-match' | 'next-data' | 'config-env' | 'middleware-secret';
 export type FailOn = 'critical' | 'warning' | 'all';
 
 export interface SecretPattern {
@@ -23,9 +23,24 @@ export interface Finding {
   rca?: RcaResult;
 }
 
+/**
+ * A finding that was suppressed by a rule in `snytch.config.js`.
+ * Carried through to the report so the suppression is always visible.
+ */
+export interface SuppressedFinding {
+  /** The original finding that was suppressed. */
+  finding: Finding;
+  /** The suppression rule that matched. */
+  rule: SuppressRule;
+}
+
 export interface ScanResult {
   scannedFiles: number;
   findings: Finding[];
+  /** Findings excluded by suppression rules — always reported for auditability. */
+  suppressedFindings: SuppressedFinding[];
+  /** Suppression rules whose `until` date has passed — surfaced as warnings. */
+  expiredRules: SuppressRule[];
   durationMs: number;
 }
 
@@ -62,10 +77,42 @@ export interface RcaConfig {
   maxTokens?: number;
 }
 
+/**
+ * A single suppression rule in `snytch.config.js`.
+ *
+ * A finding is suppressed when ALL specified fields match:
+ * - `surface` (if present) matches `finding.type`
+ * - `pattern` (if present) is a substring of `finding.patternName`
+ *
+ * `reason` is required — suppressions without a stated reason are rejected.
+ * `until` is an optional ISO-8601 date string (e.g. `"2026-06-01"`). Once that
+ * date has passed the rule is treated as expired and the finding becomes active again.
+ */
+export interface SuppressRule {
+  /** Limit suppression to a specific scan surface. Omit to match all surfaces. */
+  surface?: FindingType;
+  /** Substring match against `finding.patternName`. Omit to match all patterns. */
+  pattern?: string;
+  /** Required. Why this finding is being suppressed. Shown in the report. */
+  reason: string;
+  /**
+   * Optional ISO-8601 date string (`"YYYY-MM-DD"`). The suppression expires at
+   * the start of this date — findings are active again from that day onward.
+   */
+  until?: string;
+  /**
+   * Optional. The person who added this suppression rule — a name, username,
+   * or email. Shown in the report so others know who to ask about it.
+   */
+  addedBy?: string;
+}
+
 export interface SnytchConfig {
   serverOnly?: string[];
   failOn?: FailOn;
   rca?: RcaConfig;
+  /** Suppression rules — findings matched by a rule are excluded from CI gates. */
+  suppress?: SuppressRule[];
 }
 
 export interface ResolvedEnvVar {

@@ -90,9 +90,39 @@ const SCAN_FINDINGS: Finding[] = [
   },
 ];
 
+/** Synthetic suppression rules for the demo. */
+const DEMO_SUPPRESS_RULES = {
+  jwtInternal: {
+    pattern: 'JWT Token',
+    reason: 'Internal session token used by auth middleware — not a credential, reviewed 2026-03-21',
+    until: '2026-09-01',
+    addedBy: '@alice',
+  },
+  npmExpired: {
+    pattern: 'NPM Token',
+    reason: 'Read-only publish token — rotated quarterly, suppression was not extended',
+    until: '2026-01-15', // expired
+    addedBy: '@bob',
+  },
+} satisfies Record<string, import('../types.js').SuppressRule>;
+
 const SCAN_RESULT: ScanResult = {
   scannedFiles: 12,
-  findings: SCAN_FINDINGS,
+  // JWT Token and NPM Token are "suppressed" — remove them from active findings
+  findings: SCAN_FINDINGS.filter(
+    (f) => f.patternName !== 'JWT Token' && f.patternName !== 'NPM Token',
+  ),
+  suppressedFindings: [
+    {
+      finding: SCAN_FINDINGS.find((f) => f.patternName === 'JWT Token')!,
+      rule: DEMO_SUPPRESS_RULES.jwtInternal,
+    },
+    {
+      finding: SCAN_FINDINGS.find((f) => f.patternName === 'NPM Token')!,
+      rule: DEMO_SUPPRESS_RULES.npmExpired,
+    },
+  ],
+  expiredRules: [DEMO_SUPPRESS_RULES.npmExpired],
   durationMs: 184,
 };
 

@@ -4,6 +4,22 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [0.2.0] — 2026-03-21
+
+### Added
+
+- **`__NEXT_DATA__` scanner** (`src/nextdata.ts`): `snytch scan` now scans `.next/server/pages/*.html` for secrets embedded in the `__NEXT_DATA__` JSON block by `getStaticProps` and `getServerSideProps`. Findings carry `type: 'next-data'`.
+- **`next.config.js` env block scanner** (`src/configscan.ts`): `snytch scan` now reads `next.config.js` (and `.mjs` / `.ts` variants), extracts the `env` block, and flags values matching secret patterns or keys listed in `serverOnly`. Findings carry `type: 'config-env'`. Catches the issue at the config level — earlier than the bundle scanner.
+- **Edge middleware scanner** (`src/middlewarescan.ts`): `snytch scan` now scans `.next/server/middleware.js` for secrets. Edge middleware is not client-side JS but secrets there are still a security risk. Findings carry `type: 'middleware-secret'`.
+- Surface labels in terminal output: each finding now shows its origin (`[client bundle]`, `[__NEXT_DATA__]`, `[next.config env]`, `[edge middleware]`) for faster triage.
+- Surface labels in HTML report: each finding card now includes the surface type as a subtitle (e.g., `· next.config env`).
+- **Config-level suppression rules** (`src/suppress.ts`): add a `suppress` array to `snytch.config.js` to silence known-safe findings. Each rule requires a `reason` field and optionally accepts a `pattern`, `surface`, and `until` (ISO-8601 expiry date). Rules with an expired `until` date are surfaced as warnings rather than silently ignored.
+- **Suppressions tab in HTML report**: the scan report now includes a third tab listing all suppressed findings alongside the rule that matched each one. Expired rules are highlighted in amber. The tab is omitted (not shown as "(0)") when there are no suppressions.
+- **Suppression summary in terminal output**: `snytch scan` now prints a one-line count of suppressed findings after the findings block, with a hint to run `--report` to see details. Expired suppression rules print a separate amber warning.
+- **`addedBy` field on suppression rules**: optional field to record who added the rule — a name, username, or email. Shown in the Suppressions tab so others know who to ask about it.
+
+---
+
 ## [0.1.5] — 2026-03-21
 
 ### Security

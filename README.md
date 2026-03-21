@@ -124,11 +124,11 @@ snytch demo
 
 Three report files are generated in your current directory:
 
-| File                                      | Contents                                           |
-| ----------------------------------------- | -------------------------------------------------- |
-| `snytch-reports/snytch-report.html`       | Bundle scan findings with Findings and AI RCA tabs |
-| `snytch-reports/snytch-check-report.html` | `NEXT_PUBLIC_` exposure findings                   |
-| `snytch-reports/snytch-diff-report.html`  | Environment variable drift across `.env` files     |
+| File                                      | Contents                                                          |
+| ----------------------------------------- | ----------------------------------------------------------------- |
+| `snytch-reports/snytch-report.html`       | Bundle scan findings with Findings, AI RCA, and Suppressions tabs |
+| `snytch-reports/snytch-check-report.html` | `NEXT_PUBLIC_` exposure findings                                  |
+| `snytch-reports/snytch-diff-report.html`  | Environment variable drift across `.env` files                    |
 
 > Add this to your `.gitignore` to avoid committing the reports directory:
 >
@@ -154,7 +154,11 @@ You will be prompted to delete the generated report files when the demo complete
 
 ## Features
 
-- Scans `.next/static/chunks` recursively for JavaScript and CSS files
+- Scans four surfaces per build:
+  - `.next/static/chunks` — client-side JavaScript and CSS bundles
+  - `.next/server/pages` — `__NEXT_DATA__` blocks embedded in HTML responses
+  - `next.config.js` `env` block — values injected into all bundles at build time
+  - `.next/server/middleware.js` — compiled edge middleware
 - Detects 170+ secret patterns including:
   - AWS access keys, session tokens, and resource ARNs
   - Stripe, Square, PayPal, Braintree, and Coinbase keys
@@ -168,9 +172,10 @@ You will be prompted to delete the generated report files when the demo complete
   - Auth providers (Auth0, Okta)
   - Monitoring and observability (Datadog, New Relic, Sentry, Splunk, Grafana)
   - High-entropy string heuristics for unknown secret formats
+- Config-level suppression rules with required justification and optional expiry dates
 - AI root cause analysis via Claude (Anthropic) or GPT-4o (OpenAI) when `--report` is set
 - Git provenance for each finding (source file + introducing commit)
-- HTML report with per-finding details and editor prompts
+- HTML report with Findings, AI RCA, and Suppressions tabs
 - MCP server for editor integration (Cursor, Windsurf, Claude Desktop)
 
 ---
@@ -320,6 +325,14 @@ export default {
   rca: {
     maxTokens: 2048,
   },
+  suppress: [
+    {
+      pattern: 'JWT Token',
+      reason: 'Internal session token — not a credential, reviewed 2026-03-21',
+      addedBy: '@alice',
+      until: '2026-06-01',
+    },
+  ],
 };
 ```
 
@@ -328,12 +341,29 @@ export default {
 | `serverOnly`    | `string[]`                         | Variable names that must never be exposed to the client                                     |
 | `failOn`        | `'critical' \| 'warning' \| 'all'` | Default exit code threshold for all commands                                                |
 | `rca.maxTokens` | `number`                           | Max tokens for AI RCA responses (default: 2048). Increase if responses are being truncated. |
+| `suppress`      | `SuppressRule[]`                   | Rules to silence known-safe findings. See [Suppression rules](#suppression-rules) below.    |
 
 When `serverOnly` is set:
 
 - `snytch check` will flag any listed key that appears under `NEXT_PUBLIC_`
 - `snytch diff` will exit 1 in non-strict mode if a `serverOnly` key has drifted
 - `snytch scan` will detect literal values of these variables in the bundle
+
+---
+
+## Suppression rules
+
+Each entry in the `suppress` array supports the following fields:
+
+| Field     | Required | Description                                                                                                                                         |
+| --------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reason`  | yes      | Why this finding is being suppressed. Shown in the report and terminal output.                                                                      |
+| `pattern` | no       | Substring match against the finding's pattern name. Omit to match all patterns.                                                                     |
+| `surface` | no       | Limit to a specific scan surface: `pattern-match`, `next-data`, `config-env`, `middleware-secret`.                                                  |
+| `addedBy` | no       | The person who added this rule — a name, username, or email. Shown in the report so others know who to ask about it.                                |
+| `until`   | no       | ISO-8601 expiry date (`"YYYY-MM-DD"`). The rule stops suppressing findings on this date and appears as a warning in the report and terminal output. |
+
+Rules with an expired `until` date are never silently dropped — they surface as warnings so your team knows to remove or extend them.
 
 ---
 

@@ -11,6 +11,8 @@ function makeResult(overrides: Partial<ScanResult> = {}): ScanResult {
   return {
     scannedFiles: 5,
     findings: [],
+    suppressedFindings: [],
+    expiredRules: [],
     durationMs: 42,
     ...overrides,
   };

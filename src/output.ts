@@ -9,17 +9,74 @@ function relPath(filePath: string, projectRoot: string): string {
   return relative(projectRoot, filePath) || filePath;
 }
 
+/**
+ * Return a short human-readable label describing where a finding came from.
+ *
+ * @param finding - The finding to label.
+ * @returns A short surface label string.
+ */
+function findingSurfaceLabel(finding: Finding): string {
+  switch (finding.type) {
+    case 'next-data':
+      return chalk.dim('[__NEXT_DATA__]');
+    case 'config-env':
+      return chalk.dim('[next.config env]');
+    case 'middleware-secret':
+      return chalk.dim('[edge middleware]');
+    case 'value-match':
+    case 'pattern-match':
+    default:
+      return chalk.dim('[client bundle]');
+  }
+}
+
 function printFinding(finding: Finding, projectRoot: string): void {
-  const label =
+  const severityLabel =
     finding.severity === 'critical'
       ? chalk.red('[CRITICAL]')
       : chalk.yellow('[WARN]');
 
+  const surface = findingSurfaceLabel(finding);
+
   console.log('');
-  console.log(`  ${label} ${finding.patternName}`);
+  console.log(`  ${severityLabel} ${surface} ${finding.patternName}`);
   console.log(`    file:  ${relPath(finding.filePath, projectRoot)}`);
   console.log(`    col:   ${finding.charOffset}`);
   console.log(`    value: ${finding.truncatedValue} (truncated)`);
+}
+
+/**
+ * Print a one-line suppression summary and any expired-rule warnings.
+ *
+ * @param result - The scan result containing suppressed findings.
+ * @param expiredRules - Any suppression rules whose `until` date has passed.
+ * @param reportMode - Whether `--report` was passed (suppressed tab visible in report).
+ */
+function printSuppressionSummary(
+  suppressedCount: number,
+  expiredRules: import('./types.js').SuppressRule[],
+  reportMode: boolean,
+): void {
+  if (suppressedCount > 0) {
+    const label = suppressedCount === 1 ? 'finding' : 'findings';
+    const hint = reportMode
+      ? chalk.dim('(listed in report)')
+      : chalk.dim('(run with --report to see details)');
+    console.log(
+      `  ${chalk.dim(`${suppressedCount} suppressed ${label}`)} ${hint}`,
+    );
+  }
+
+  for (const rule of expiredRules) {
+    console.log(
+      chalk.yellow(
+        `  ⚠  Suppression rule expired — reason: "${rule.reason}"${rule.until ? ` (until: ${rule.until})` : ''}`,
+      ),
+    );
+    console.log(
+      chalk.yellow('     This rule is no longer suppressing any findings. Remove or extend it.'),
+    );
+  }
 }
 
 export function printScanResult(
@@ -87,6 +144,11 @@ export function printScanResult(
   }
 
   console.log('');
+  printSuppressionSummary(
+    result.suppressedFindings.length,
+    result.expiredRules,
+    options.report ?? false,
+  );
   if (options.report) {
     generateReport(result, options);
   } else {

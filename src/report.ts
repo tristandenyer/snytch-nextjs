@@ -1,7 +1,7 @@
 import { writeFileSync, mkdirSync } from 'fs';
 import { join, relative } from 'path';
 import { execSync, spawnSync } from 'child_process';
-import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions, CheckFinding, DiffResult, DiffOptions, RcaResult } from './types.js';
+import { ScanResult, ScanOptions, Finding, SuppressedFinding, SuppressRule, CheckResult, CheckOptions, CheckFinding, DiffResult, DiffOptions, RcaResult } from './types.js';
 
 /** Returns (and creates if needed) the snytch-reports/ output directory. */
 function reportsDir(projectRoot: string): string {
@@ -40,7 +40,15 @@ function renderFindingCard(finding: Finding, projectRoot: string): string {
   const badgeClass = isCritical ? 'badge-critical' : 'badge-warning';
   const cardClass = isCritical ? 'card card-critical' : 'card card-warning';
   const badgeLabel = isCritical ? 'CRITICAL' : 'WARN';
-  const typeLabel = finding.type === 'value-match' ? ' · value match' : '';
+  const surfaceLabels: Record<string, string> = {
+    'next-data': '__NEXT_DATA__',
+    'config-env': 'next.config env',
+    'middleware-secret': 'edge middleware',
+    'value-match': 'value match',
+    'pattern-match': '',
+  };
+  const surfaceText = surfaceLabels[finding.type] ?? '';
+  const typeLabel = surfaceText ? ` · ${surfaceText}` : '';
 
   return `
     <div class="${cardClass}">
@@ -168,6 +176,102 @@ function renderRcaTab(result: ScanResult, projectRoot: string): string {
   return `<div class="rca-list">${cards}</div>`;
 }
 
+/**
+ * Render a suppression card for a single suppressed finding.
+ *
+ * @param sf - The suppressed finding with its matching rule.
+ * @param projectRoot - Project root for relative path calculation.
+ * @param today - ISO-8601 today string for expired rule detection.
+ * @returns HTML string for the card.
+ */
+function renderSuppressCard(sf: SuppressedFinding, projectRoot: string, today: string): string {
+  const isExpired = sf.rule.until !== undefined && sf.rule.until < today;
+  const badgeLabel = isExpired ? 'EXPIRED' : 'SUPPRESSED';
+  const badgeClass = isExpired ? 'badge-expired' : 'badge-suppressed';
+  const cardClass = isExpired ? 'suppress-card expired' : 'suppress-card';
+  const surfaceLabels: Record<string, string> = {
+    'next-data': '__NEXT_DATA__',
+    'config-env': 'next.config env',
+    'middleware-secret': 'edge middleware',
+    'value-match': 'value match',
+    'pattern-match': 'client bundle',
+  };
+  const surface = surfaceLabels[sf.finding.type] ?? sf.finding.type;
+  const untilText = sf.rule.until ? sf.rule.until : 'no expiry';
+
+  return `
+    <div class="${cardClass}">
+      <div class="suppress-card-header">
+        <span class="badge ${badgeClass}">${badgeLabel}</span>
+        <span class="pattern-name">${escapeHtml(sf.finding.patternName)}</span>
+        <span style="font-size:12px;color:var(--text2);margin-left:auto">${escapeHtml(surface)}</span>
+      </div>
+      <div class="suppress-card-body">
+        <div class="field"><span class="label">file</span><span class="value mono">${escapeHtml(relPath(sf.finding.filePath, projectRoot))}</span></div>
+        <div class="field"><span class="label">reason</span><span class="value">${escapeHtml(sf.rule.reason)}</span></div>
+        ${sf.rule.addedBy ? `<div class="field"><span class="label">added by</span><span class="value">${escapeHtml(sf.rule.addedBy)}</span></div>` : ''}
+        <div class="field"><span class="label">until</span><span class="value mono">${escapeHtml(untilText)}</span></div>
+        ${sf.rule.pattern ? `<div class="field"><span class="label">pattern</span><span class="value mono">${escapeHtml(sf.rule.pattern)}</span></div>` : ''}
+        ${sf.rule.surface ? `<div class="field"><span class="label">surface</span><span class="value mono">${escapeHtml(sf.rule.surface)}</span></div>` : ''}
+      </div>
+    </div>`;
+}
+
+/**
+ * Render the Suppressions tab HTML for the scan report.
+ *
+ * @param result - The scan result.
+ * @param projectRoot - Project root directory.
+ * @param today - ISO-8601 today string.
+ * @returns HTML string for the tab panel content.
+ */
+function renderSuppressionsTab(result: ScanResult, projectRoot: string, today: string): string {
+  const total = result.suppressedFindings.length + result.expiredRules.length;
+
+  if (total === 0) {
+    return `<div class="placeholder">No suppression rules are active in this run.</div>`;
+  }
+
+  const cards = result.suppressedFindings
+    .map((sf) => renderSuppressCard(sf, projectRoot, today))
+    .join('');
+
+  const expiredOnlyCards = result.expiredRules
+    .filter((rule) => !result.suppressedFindings.some((sf) => sf.rule === rule))
+    .map((rule: SuppressRule) => {
+      const untilText = rule.until ?? 'no expiry';
+      return `
+    <div class="suppress-card expired">
+      <div class="suppress-card-header">
+        <span class="badge badge-expired">EXPIRED</span>
+        <span class="pattern-name">${escapeHtml(rule.reason)}</span>
+      </div>
+      <div class="suppress-card-body">
+        <div class="field"><span class="label">until</span><span class="value mono">${escapeHtml(untilText)}</span></div>
+        ${rule.addedBy ? `<div class="field"><span class="label">added by</span><span class="value">${escapeHtml(rule.addedBy)}</span></div>` : ''}
+        ${rule.pattern ? `<div class="field"><span class="label">pattern</span><span class="value mono">${escapeHtml(rule.pattern)}</span></div>` : ''}
+        ${rule.surface ? `<div class="field"><span class="label">surface</span><span class="value mono">${escapeHtml(rule.surface)}</span></div>` : ''}
+        <div class="field"><span class="label">note</span><span class="value" style="color:var(--warning)">This rule has expired and is not suppressing any findings. Remove or extend it.</span></div>
+      </div>
+    </div>`;
+    })
+    .join('');
+
+  const legend = `
+    <div class="suppress-legend">
+      <div class="suppress-legend-item">
+        <span class="badge badge-suppressed">SUPPRESSED</span>
+        <span>This finding matched a suppression rule and was excluded from the active findings count. The rule is still valid.</span>
+      </div>
+      <div class="suppress-legend-item">
+        <span class="badge badge-expired">EXPIRED</span>
+        <span>The suppression rule's <code>until</code> date has passed. The rule is no longer excluding any findings — remove or extend it in <code>snytch.config.js</code>.</span>
+      </div>
+    </div>`;
+
+  return `${legend}<div class="suppress-list">${cards}${expiredOnlyCards}</div>`;
+}
+
 function buildHtml(
   result: ScanResult,
   options: ScanOptions,
@@ -176,6 +280,8 @@ function buildHtml(
 ): string {
   const findingsHtml = renderFindingsTab(result, options.projectRoot);
   const rcaHtml = renderRcaTab(result, options.projectRoot);
+  const today = new Date().toISOString().slice(0, 10);
+  const suppressionsHtml = renderSuppressionsTab(result, options.projectRoot, today);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -478,6 +584,56 @@ function buildHtml(
       line-height: 1.5;
       word-break: break-word;
     }
+
+    /* ── Suppressions tab ───────────────────────────────── */
+    .suppress-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 12px 16px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text2);
+    }
+    .suppress-legend-item {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .suppress-legend-item .badge {
+      flex-shrink: 0;
+    }
+    .suppress-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .suppress-card {
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--text2);
+      border-radius: 8px;
+      background: var(--bg2);
+      overflow: hidden;
+    }
+
+    .suppress-card.expired {
+      border-left-color: var(--warning);
+      background: var(--warning-bg);
+      border-color: var(--warning-border);
+    }
+
+    .suppress-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .badge-suppressed { background: var(--text2); color: var(--bg); }
+    .badge-expired    { background: var(--warning); color: #fff; }
+
+    .suppress-card-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 5px; }
   </style>
 </head>
 <body>
@@ -494,6 +650,7 @@ function buildHtml(
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('findings')">Findings</button>
     <button class="tab-btn" onclick="showTab('rca')">AI RCA</button>
+    <button class="tab-btn" onclick="showTab('suppressions')">Suppressions${result.suppressedFindings.length + result.expiredRules.length > 0 ? ` (${result.suppressedFindings.length + result.expiredRules.length})` : ''}</button>
   </div>
 
   <div id="tab-findings" class="tab-panel active">
@@ -502,6 +659,10 @@ function buildHtml(
 
   <div id="tab-rca" class="tab-panel">
     ${rcaHtml}
+  </div>
+
+  <div id="tab-suppressions" class="tab-panel">
+    ${suppressionsHtml}
   </div>
 
   <script>

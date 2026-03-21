@@ -4,6 +4,10 @@ import { PATTERNS } from '../patterns.js';
 import { loadConfig, resolveEnvVars } from '../config.js';
 import { resolveGitContext } from '../gitlog.js';
 import { generateRcaForFindings } from '../rca.js';
+import { scanNextData } from '../nextdata.js';
+import { scanNextConfig } from '../configscan.js';
+import { scanMiddleware } from '../middlewarescan.js';
+import { applySuppressions } from '../suppress.js';
 import { Finding, ScanResult, ScanOptions } from '../types.js';
 
 function recursiveReadFiles(dir: string, extension: string): string[] {
@@ -130,7 +134,19 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
     }
   }
 
-  // Pass 3: attach git context to each finding (cached per chunk file)
+  // Pass 3: scan __NEXT_DATA__ blocks in .next/server/pages
+  const nextDataFindings = scanNextData(options.dir, options.projectRoot, config ?? {});
+  findings.push(...nextDataFindings);
+
+  // Pass 3b: scan next.config.js env block
+  const configFindings = scanNextConfig(options.projectRoot, config ?? {});
+  findings.push(...configFindings);
+
+  // Pass 3c: scan edge middleware
+  const middlewareFindings = scanMiddleware(options.dir, options.projectRoot, config ?? {});
+  findings.push(...middlewareFindings);
+
+  // Pass 4: attach git context to each finding (cached per chunk file)
   const gitContextCache = new Map<string, ReturnType<typeof resolveGitContext>>();
 
   for (const finding of findings) {
@@ -146,16 +162,23 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
     }
   }
 
-  // Pass 4: AI RCA — only when --report is set, a provider is configured, and findings exist
+  // Pass 4b: apply suppression rules from snytch.config.js
+  const today = new Date().toISOString().slice(0, 10);
+  const suppressionResult = applySuppressions(findings, config?.suppress ?? [], today);
+  const activeFindings = suppressionResult.active;
+
+  // Pass 5: AI RCA — only when --report is set, a provider is configured, and findings exist
   if (options.report && options.aiProvider && options.aiProvider !== 'none') {
-    await generateRcaForFindings(findings, options.projectRoot, options.aiProvider, options.rcaMaxTokens);
+    await generateRcaForFindings(activeFindings, options.projectRoot, options.aiProvider, options.rcaMaxTokens);
   }
 
   const durationMs = Date.now() - startTime;
 
   return {
     scannedFiles: allFiles.length,
-    findings,
+    findings: activeFindings,
+    suppressedFindings: suppressionResult.suppressed,
+    expiredRules: suppressionResult.expiredRules,
     durationMs,
   };
 }
