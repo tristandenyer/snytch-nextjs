@@ -40,31 +40,6 @@ function makeFinding(overrides: Partial<Finding> = {}): Finding {
   };
 }
 
-// ── truncation ────────────────────────────────────────────────────────────────
-
-describe('truncation invariants', () => {
-  it('prefix before ••• is at most 8 chars', () => {
-    // This mirrors what scan.ts does: value.substring(0, 8) + '•••'
-    const rawValue = 'sk_live_abcdefghijklmnopqrstu';
-    const truncated = rawValue.substring(0, 8) + '•••';
-    const prefix = truncated.slice(0, truncated.indexOf('•••'));
-    expect(prefix.length).toBeLessThanOrEqual(8);
-    expect(truncated.endsWith('•••')).toBe(true);
-  });
-
-  it('short values are still truncated to 8+•••', () => {
-    const rawValue = 'abc';
-    const truncated = rawValue.substring(0, 8) + '•••';
-    expect(truncated).toBe('abc•••');
-  });
-
-  it('exactly 8-char value produces 8-char prefix', () => {
-    const rawValue = '12345678extra';
-    const truncated = rawValue.substring(0, 8) + '•••';
-    expect(truncated).toBe('12345678•••');
-  });
-});
-
 // ── printScanResult: JSON output ──────────────────────────────────────────────
 
 describe('printScanResult — JSON mode', () => {
@@ -188,76 +163,3 @@ describe('printScanResult — terminal mode', () => {
   });
 });
 
-// ── exit code logic ───────────────────────────────────────────────────────────
-
-describe('exit code logic', () => {
-  it('shouldFail is true when failOn=critical and criticals exist', () => {
-    const findings: Finding[] = [makeFinding({ severity: 'critical' })];
-    const shouldFail =
-      findings.some((f) => f.severity === 'critical');
-    expect(shouldFail).toBe(true);
-  });
-
-  it('shouldFail is false when failOn=critical and only warnings exist', () => {
-    const findings: Finding[] = [makeFinding({ severity: 'warning' })];
-    const shouldFail = findings.some((f) => f.severity === 'critical');
-    expect(shouldFail).toBe(false);
-  });
-
-  it('shouldFail is true when failOn=warning and warnings exist', () => {
-    const findings: Finding[] = [makeFinding({ severity: 'warning' })];
-    const shouldFail =
-      findings.some((f) => f.severity === 'critical' || f.severity === 'warning');
-    expect(shouldFail).toBe(true);
-  });
-
-  it('shouldFail is false when no findings regardless of failOn', () => {
-    const findings: Finding[] = [];
-    const shouldFail = findings.length > 0;
-    expect(shouldFail).toBe(false);
-  });
-
-  it('shouldFail is true when failOn=all and any finding exists', () => {
-    const findings: Finding[] = [makeFinding({ severity: 'warning' })];
-    const shouldFail = findings.length > 0;
-    expect(shouldFail).toBe(true);
-  });
-});
-
-// ── CLI flag: --dir ───────────────────────────────────────────────────────────
-
-describe('CLI --dir flag', () => {
-  it('parseArgs uses projectRoot + /.next as default dir', () => {
-    // We test the logic directly rather than spawning a subprocess
-    const projectRoot = '/some/project';
-    const defaultDir = projectRoot + '/.next';
-    expect(defaultDir).toBe('/some/project/.next');
-  });
-
-  it('--dir overrides the default scan directory', () => {
-    // Simulate what parseArgs does: if --dir is present, use it
-    const args = ['scan', '--dir', '/custom/path'];
-    let dir = '/default/.next';
-    for (let i = 0; i < args.length; i++) {
-      if (args[i] === '--dir' && args[i + 1]) {
-        dir = args[i + 1];
-        i++;
-      }
-    }
-    expect(dir).toBe('/custom/path');
-  });
-});
-
-// ── value-match finding type ──────────────────────────────────────────────────
-
-describe('value-match finding', () => {
-  it('has type value-match and severity critical', () => {
-    const f = makeFinding({
-      type: 'value-match',
-      patternName: 'Value match: MY_SECRET',
-      severity: 'critical',
-    });
-    expect(f.type).toBe('value-match');
-    expect(f.severity).toBe('critical');
-  });
-});

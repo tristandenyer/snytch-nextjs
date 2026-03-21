@@ -155,3 +155,26 @@ Write every line as if a senior security engineer and a TypeScript expert are re
 - Would a new contributor understand this in 6 months?
 
 If the answer to any of the first four is "maybe", fix it before moving on.
+
+---
+
+## 12. Test Suite Hygiene
+
+Periodically audit the test suite — not just for passing/failing, but for value. Ask:
+
+**Are existing tests valid?**
+- Does each test actually call an exported function, or does it only exercise logic written inside the test file itself?
+- Does each assertion verify real behaviour, or does it trivially re-assert what the test fixture already set?
+- Are any tests circular (e.g. `makeFoo()` returns `{ x: 1 }`, test asserts `x === 1`)?
+
+**Are existing tests needed?**
+- Is the same behaviour already covered more thoroughly elsewhere? (e.g. `parser.test.ts` already tests quote-stripping; `scan.test.ts` needn't repeat it)
+- Are there timing/duration assertions (`durationMs >= 0`) that add no signal?
+- Are there suites testing internal arithmetic or string operations that don't belong to any module?
+
+**Do we need new tests?**
+- Has a new exported function been added without tests?
+- Has a bug been fixed that wasn't caught by the existing suite? Add a regression test.
+- Are there edge cases (empty input, missing files, malformed data, large input) not yet covered for a given module?
+
+Remove tests that fail any of the first two checks. Add tests for any gap found in the third. A test that passes the wrong value or tests nothing real is worse than no test.

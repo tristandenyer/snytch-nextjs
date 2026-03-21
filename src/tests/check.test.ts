@@ -67,10 +67,6 @@ describe('check — no findings', () => {
     expect(result.findings).toHaveLength(0);
   });
 
-  it('returns durationMs >= 0', async () => {
-    const result = await check(makeOptions());
-    expect(result.durationMs).toBeGreaterThanOrEqual(0);
-  });
 });
 
 // ── pattern-match findings ────────────────────────────────────────────────────

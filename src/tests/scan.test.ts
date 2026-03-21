@@ -236,22 +236,6 @@ describe('scan — resolveEnvVars', () => {
     expect(vars[0].source).toBe('.env');
   });
 
-  it('strips surrounding double-quotes', () => {
-    const vol = getVol();
-    vol.mkdirSync('/project', { recursive: true });
-    vol.writeFileSync('/project/.env.local', 'QUOTED_VAR="myvalue123"\n');
-    const vars = resolveEnvVars('/project', ['QUOTED_VAR']);
-    expect(vars[0].value).toBe('myvalue123');
-  });
-
-  it('strips surrounding single-quotes', () => {
-    const vol = getVol();
-    vol.mkdirSync('/project', { recursive: true });
-    vol.writeFileSync('/project/.env.local', "QUOTED_VAR='myvalue456'\n");
-    const vars = resolveEnvVars('/project', ['QUOTED_VAR']);
-    expect(vars[0].value).toBe('myvalue456');
-  });
-
   it('ignores comment lines', () => {
     const vol = getVol();
     vol.mkdirSync('/project', { recursive: true });
