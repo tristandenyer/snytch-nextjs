@@ -71,5 +71,8 @@ export interface CheckResult {
 export interface CheckOptions {
   projectRoot: string;
   json: boolean;
+  report: boolean;
   failOn: FailOn;
+  /** Explicit list of .env file paths to check. When omitted, auto-detect. */
+  envFiles?: string[];
 }

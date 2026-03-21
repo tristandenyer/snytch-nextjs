@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { relative } from 'path';
 import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions } from './types.js';
-import { generateReport } from './report.js';
+import { generateReport, generateCheckReport } from './report.js';
 
 const DIVIDER = '─'.repeat(45);
 
@@ -113,6 +113,10 @@ export function printCheckResult(
   if (result.findings.length === 0) {
     console.log('');
     console.log(chalk.green('  ✓ snytch: clean — no NEXT_PUBLIC_ secrets detected'));
+    if (options.report) {
+      console.log('');
+      generateCheckReport(result, options);
+    }
     console.log('');
     return;
   }
@@ -134,5 +138,9 @@ export function printCheckResult(
     console.log(`    value:   ${finding.truncatedValue} (truncated)`);
   }
 
+  console.log('');
+  if (options.report) {
+    generateCheckReport(result, options);
+  }
   console.log('');
 }

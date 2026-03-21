@@ -32,6 +32,7 @@ function makeOptions(overrides: Partial<CheckOptions> = {}): CheckOptions {
   return {
     projectRoot: '/project',
     json: false,
+    report: false,
     failOn: 'critical',
     ...overrides,
   };
@@ -193,5 +194,48 @@ describe('check — edge cases', () => {
 
   it('does not throw when no .env files present at all', async () => {
     await expect(check(makeOptions())).resolves.toBeDefined();
+  });
+});
+
+// ── explicit envFiles option ───────────────────────────────────────────────────
+
+describe('check — explicit envFiles', () => {
+  it('scans only the specified file when envFiles is set', async () => {
+    getVol().writeFileSync('/project/.env.local', 'NEXT_PUBLIC_A=sk_live_abcdefghijklmnopqrstu\n');
+    getVol().writeFileSync('/project/.env', 'NEXT_PUBLIC_B=sk_live_abcdefghijklmnopqrstuv\n');
+    const result = await check(makeOptions({ envFiles: ['/project/.env.local'] }));
+    const vars = result.findings.map((f) => f.varName);
+    expect(vars).toContain('NEXT_PUBLIC_A');
+    expect(vars).not.toContain('NEXT_PUBLIC_B');
+    expect(result.scannedFiles).toBe(1);
+  });
+
+  it('scans multiple explicit files', async () => {
+    getVol().writeFileSync('/project/.env.local', 'NEXT_PUBLIC_A=sk_live_abcdefghijklmnopqrstu\n');
+    getVol().writeFileSync('/project/.env', 'NEXT_PUBLIC_B=sk_live_abcdefghijklmnopqrstuv\n');
+    const result = await check(makeOptions({ envFiles: ['/project/.env.local', '/project/.env'] }));
+    const vars = result.findings.map((f) => f.varName);
+    expect(vars).toContain('NEXT_PUBLIC_A');
+    expect(vars).toContain('NEXT_PUBLIC_B');
+    expect(result.scannedFiles).toBe(2);
+  });
+
+  it('uses basename of explicit path as the envFile label in findings', async () => {
+    getVol().writeFileSync('/project/.env.local', 'NEXT_PUBLIC_KEY=sk_live_abcdefghijklmnopqrstu\n');
+    const result = await check(makeOptions({ envFiles: ['/project/.env.local'] }));
+    expect(result.findings[0].envFile).toBe('.env.local');
+  });
+
+  it('skips missing explicit files gracefully', async () => {
+    const result = await check(makeOptions({ envFiles: ['/project/.env.does-not-exist'] }));
+    expect(result.scannedFiles).toBe(0);
+    expect(result.findings).toHaveLength(0);
+  });
+
+  it('falls back to auto-detection when envFiles is empty array', async () => {
+    getVol().writeFileSync('/project/.env.local', 'NEXT_PUBLIC_KEY=sk_live_abcdefghijklmnopqrstu\n');
+    const result = await check(makeOptions({ envFiles: [] }));
+    // Empty array triggers fallback — .env.local should be found
+    expect(result.scannedFiles).toBe(1);
   });
 });

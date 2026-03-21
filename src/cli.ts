@@ -20,7 +20,10 @@ async function main() {
   if (!command || (command !== 'scan' && command !== 'check')) {
     console.error('Usage:');
     console.error('  snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all]');
-    console.error('  snytch check [--json] [--fail-on critical|warning|all]');
+    console.error('  snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|all]');
+    console.error('');
+    console.error('  --env may be repeated to specify multiple files:');
+    console.error('    snytch check --env .env.local --env .env.production');
     process.exit(1);
   }
 
@@ -28,6 +31,7 @@ async function main() {
   let report = false;
   let failOn: FailOn = 'critical';
   let dir = projectRoot + '/.next';
+  const envFiles: string[] = [];
 
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
@@ -40,6 +44,9 @@ async function main() {
       i++;
     } else if (arg === '--dir' && args[i + 1]) {
       dir = args[i + 1];
+      i++;
+    } else if (arg === '--env' && args[i + 1]) {
+      envFiles.push(args[i + 1]);
       i++;
     }
   }
@@ -57,7 +64,13 @@ async function main() {
       process.exit(shouldFail ? 1 : 0);
 
     } else if (command === 'check') {
-      const options: CheckOptions = { projectRoot, json, failOn };
+      const options: CheckOptions = {
+        projectRoot,
+        json,
+        report,
+        failOn,
+        envFiles: envFiles.length > 0 ? envFiles : undefined,
+      };
       const result = await check(options);
       printCheckResult(result, options);
 

@@ -1,7 +1,7 @@
 import { writeFileSync } from 'fs';
 import { join, relative } from 'path';
 import { execSync } from 'child_process';
-import { ScanResult, ScanOptions, Finding } from './types.js';
+import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions, CheckFinding } from './types.js';
 
 function getGitSha(projectRoot: string): string {
   try {
@@ -371,6 +371,157 @@ function buildHtml(
   </script>
 </body>
 </html>`;
+}
+
+// ── Check report ──────────────────────────────────────────────────────────────
+
+function renderCheckFindingCard(finding: CheckFinding): string {
+  const isCritical = finding.severity === 'critical';
+  const badgeClass = isCritical ? 'badge-critical' : 'badge-warning';
+  const cardClass = isCritical ? 'card card-critical' : 'card card-warning';
+  const badgeLabel = isCritical ? 'CRITICAL' : 'WARN';
+  const reasonLabel =
+    finding.reason === 'pattern-match' ? 'pattern match' :
+    finding.reason === 'serverOnly'     ? 'serverOnly config' :
+                                          'high entropy';
+
+  return `
+    <div class="${cardClass}">
+      <div class="card-header">
+        <span class="badge ${badgeClass}">${badgeLabel}</span>
+        <span class="pattern-name">${escapeHtml(finding.varName)}</span>
+        <span style="font-size:12px;color:var(--text2);margin-left:auto">${escapeHtml(reasonLabel)}</span>
+      </div>
+      <div class="card-body">
+        <div class="field"><span class="label">file</span><span class="value mono">${escapeHtml(finding.envFile)}:${finding.line}</span></div>
+        <div class="field"><span class="label">rule</span><span class="value">${escapeHtml(finding.patternName)}</span></div>
+        <div class="field"><span class="label">desc</span><span class="value">${escapeHtml(finding.description)}</span></div>
+        <div class="field"><span class="label">value</span><span class="value mono redacted">${escapeHtml(finding.truncatedValue)} <span class="truncated-note">(truncated)</span></span></div>
+      </div>
+    </div>`;
+}
+
+function buildCheckHtml(
+  result: CheckResult,
+  gitSha: string,
+  timestamp: string,
+): string {
+  const criticals = result.findings.filter((f) => f.severity === 'critical');
+  const warnings  = result.findings.filter((f) => f.severity === 'warning');
+
+  const summaryCards = `
+    <div class="summary-row">
+      <div class="summary-card summary-critical">
+        <div class="summary-count">${criticals.length}</div>
+        <div class="summary-label">critical</div>
+      </div>
+      <div class="summary-card summary-warning">
+        <div class="summary-count">${warnings.length}</div>
+        <div class="summary-label">warning</div>
+      </div>
+      <div class="summary-card summary-scanned">
+        <div class="summary-count">${result.scannedFiles}</div>
+        <div class="summary-label">files scanned</div>
+      </div>
+    </div>`;
+
+  const bodyHtml = result.findings.length === 0
+    ? `${summaryCards}<div class="clean-message"><span class="clean-check">✓</span> No NEXT_PUBLIC_ secrets detected.</div>`
+    : `${summaryCards}<div class="findings-list">${[...criticals, ...warnings].map(renderCheckFindingCard).join('')}</div>`;
+
+  // Reuse the same CSS as the scan report — self-contained single file
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>snytch check report</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff; --bg2: #f6f8fa; --bg3: #eaeef2; --border: #d0d7de;
+      --text: #1f2328; --text2: #636c76;
+      --critical: #cf222e; --critical-bg: #fff0ee; --critical-border: #ffcece;
+      --warning: #9a6700; --warning-bg: #fffbe5; --warning-border: #f5d76e;
+      --green: #1a7f37; --green-bg: #dafbe1;
+      --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
+        --text: #e6edf3; --text2: #8b949e;
+        --critical: #ff7b72; --critical-bg: #2d1115; --critical-border: #6e2626;
+        --warning: #e3b341; --warning-bg: #2d2000; --warning-border: #6e5000;
+        --green: #3fb950; --green-bg: #0d2a17;
+        --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+    .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 20px 32px; }
+    .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+    .header-meta { font-size: 12px; color: var(--text2); margin-top: 4px; font-family: var(--mono); }
+    .content { padding: 28px 32px; }
+    .summary-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .summary-card { flex: 1; min-width: 100px; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; background: var(--bg2); }
+    .summary-count { font-size: 28px; font-weight: 600; line-height: 1; }
+    .summary-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+    .summary-critical .summary-count { color: var(--critical); }
+    .summary-warning .summary-count { color: var(--warning); }
+    .findings-list { display: flex; flex-direction: column; gap: 12px; }
+    .card { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; border-left-width: 4px; }
+    .card-critical { border-left-color: var(--critical); background: var(--critical-bg); border-color: var(--critical-border); border-left-color: var(--critical); }
+    .card-warning  { border-left-color: var(--warning);  background: var(--warning-bg);  border-color: var(--warning-border);  border-left-color: var(--warning); }
+    .card-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    .badge { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.4px; }
+    .badge-critical { background: var(--critical); color: #fff; }
+    .badge-warning  { background: var(--warning);  color: #fff; }
+    .pattern-name { font-weight: 500; font-size: 13px; }
+    .card-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 5px; }
+    .field { display: flex; gap: 12px; font-size: 13px; }
+    .field .label { color: var(--text2); min-width: 40px; flex-shrink: 0; }
+    .field .value { word-break: break-all; }
+    .field .mono { font-family: var(--mono); font-size: 12px; }
+    .field .redacted { color: var(--critical); }
+    .truncated-note { color: var(--text2); font-size: 11px; }
+    .clean-message { padding: 24px; background: var(--green-bg); border: 1px solid var(--green); border-radius: 8px; color: var(--green); font-size: 15px; font-weight: 500; }
+    .clean-check { font-size: 18px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>snytch check report</h1>
+    <div class="header-meta">commit ${escapeHtml(gitSha)} &nbsp;·&nbsp; ${escapeHtml(timestamp)} &nbsp;·&nbsp; ${result.scannedFiles} file${result.scannedFiles === 1 ? '' : 's'} scanned</div>
+  </div>
+  <div class="content">
+    ${bodyHtml}
+  </div>
+</body>
+</html>`;
+}
+
+export function generateCheckReport(
+  result: CheckResult,
+  options: CheckOptions,
+): void {
+  const gitSha = getGitSha(options.projectRoot);
+  const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  const outputPath = join(options.projectRoot, 'snytch-check-report.html');
+
+  const html = buildCheckHtml(result, gitSha, timestamp);
+  writeFileSync(outputPath, html, 'utf-8');
+
+  console.log(`  report written to ${relative(options.projectRoot, outputPath)}`);
+
+  try {
+    const platform = process.platform;
+    const cmd =
+      platform === 'darwin' ? 'open' :
+      platform === 'win32'  ? 'start' :
+                              'xdg-open';
+    execSync(`${cmd} "${outputPath}"`, { stdio: 'ignore' });
+  } catch {
+    // Browser open failed — user can open manually
+  }
 }
 
 export function generateReport(
