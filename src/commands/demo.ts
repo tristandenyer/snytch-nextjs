@@ -107,6 +107,15 @@ const SCAN_FINDINGS: Finding[] = [
     truncatedValue: 'FlyV1 fm•••',
   },
   {
+    type: 'pattern-match',
+    patternName: 'Razorpay Live Key ID',
+    severity: 'critical',
+    description: 'Razorpay live key found in client bundle',
+    filePath: `${CHUNKS_DIR}/framework-8b3c91de.js`,
+    charOffset: 11204,
+    truncatedValue: 'rzp_live•••',
+  },
+  {
     type: 'sourcemap-secret',
     patternName: 'Twilio Auth Token',
     severity: 'warning',

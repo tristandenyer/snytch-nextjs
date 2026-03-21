@@ -19,7 +19,8 @@ All notable changes to `@snytch/nextjs` are documented here.
 ### Added
 
 - **CI/CD and deployment platform patterns**: CircleCI, Travis CI, Buildkite (agent + API tokens), Railway, Render (`rnd_` prefix + env var), Fly.io (`FlyV1` bearer + env var), Pulumi (`pul-` prefix).
-- Pattern count increased from 192 to 202.
+- **Payments and fintech patterns**: Razorpay (live/test key IDs + key secret), Adyen (API key + client key), Lemon Squeezy (API key + signing secret), Paddle (API key + webhook secret), Recurly (API key).
+- Pattern count increased from 192 to 212.
 
 ---
 

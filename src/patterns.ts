@@ -1362,5 +1362,75 @@ export const PATTERNS: SecretPattern[] = [
     severity: 'critical',
     description: 'Pulumi access token',
   },
+
+  // Razorpay (Category 83)
+  {
+    name: 'Razorpay Live Key ID',
+    pattern: /rzp_live_[a-zA-Z0-9]{14,}/g,
+    severity: 'critical',
+    description: 'Razorpay live key ID',
+  },
+  {
+    name: 'Razorpay Test Key ID',
+    pattern: /rzp_test_[a-zA-Z0-9]{14,}/g,
+    severity: 'warning',
+    description: 'Razorpay test key ID',
+  },
+  {
+    name: 'Razorpay Key Secret',
+    pattern: new RegExp("RAZORPAY_KEY_SECRET['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9]{14,})", "gi"),
+    severity: 'critical',
+    description: 'Razorpay key secret in env/config assignment',
+  },
+
+  // Adyen (Category 84)
+  {
+    name: 'Adyen API Key',
+    pattern: new RegExp("ADYEN_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9]{32,})", "gi"),
+    severity: 'critical',
+    description: 'Adyen API key in env/config assignment',
+  },
+  {
+    name: 'Adyen Client Key',
+    pattern: /(?:test|live)_[a-zA-Z0-9]{28,}/g,
+    severity: 'warning',
+    description: 'Adyen client key (test or live prefix)',
+  },
+
+  // Lemon Squeezy (Category 85)
+  {
+    name: 'Lemon Squeezy API Key',
+    pattern: new RegExp("LEMON_?SQUEEZY_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Lemon Squeezy API key in env/config assignment',
+  },
+  {
+    name: 'Lemon Squeezy Signing Secret',
+    pattern: new RegExp("LEMON_?SQUEEZY_SIGNING_SECRET['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Lemon Squeezy webhook signing secret',
+  },
+
+  // Paddle (Category 86)
+  {
+    name: 'Paddle API Key',
+    pattern: new RegExp("PADDLE_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Paddle API key in env/config assignment',
+  },
+  {
+    name: 'Paddle Webhook Secret',
+    pattern: new RegExp("PADDLE_WEBHOOK_SECRET['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Paddle webhook secret in env/config assignment',
+  },
+
+  // Recurly (Category 87)
+  {
+    name: 'Recurly API Key',
+    pattern: new RegExp("RECURLY_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Recurly API key in env/config assignment',
+  },
 ];
 

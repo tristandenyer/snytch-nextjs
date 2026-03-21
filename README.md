@@ -164,9 +164,9 @@ You will be prompted to delete the generated report files when the demo complete
   - `next.config.js` `env` block — values injected into all bundles at build time
   - `.next/server/middleware.js` — compiled edge middleware
   - `.next/trace` module dependency graph (opt-in via `--graph`) — structural import chain analysis
-- Detects 200+ secret patterns including:
+- Detects 210+ secret patterns including:
   - AWS access keys, session tokens, and resource ARNs
-  - Stripe, Square, PayPal, Braintree, and Coinbase keys
+  - Stripe, Square, PayPal, Braintree, Coinbase, Razorpay, Adyen, Lemon Squeezy, Paddle, and Recurly keys
   - Database connection strings (PostgreSQL, MySQL, MongoDB, Redis, Elasticsearch, Neon, Turso, and more)
   - GitHub, GitLab, and Bitbucket tokens (classic and fine-grained)
   - Slack, Discord, Twilio, SendGrid, Mailgun, and Postmark tokens

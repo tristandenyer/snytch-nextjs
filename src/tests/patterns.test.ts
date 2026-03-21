@@ -693,6 +693,143 @@ describe('Pulumi Access Token', () => {
   });
 });
 
+// ── Payments & Fintech (Phase 3) ──────────────────────────────────────────────
+
+describe('Razorpay Live Key ID', () => {
+  it('matches rzp_live_ prefix', () => {
+    expect(matches('Razorpay Live Key ID', 'rzp_live_' + 'ILgsfZCgtR14Qa')).toBe(true);
+  });
+  it('matches longer key', () => {
+    expect(matches('Razorpay Live Key ID', 'key=rzp_live_' + 'AbCdEfGhIjKlMn01')).toBe(true);
+  });
+  it('does not match test prefix', () => {
+    expect(findPattern('Razorpay Live Key ID').pattern.test('rzp_test_ILgsfZCgtR14Qa')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Razorpay Live Key ID', 'rzp_live_abc')).toBe(false);
+  });
+});
+
+describe('Razorpay Test Key ID', () => {
+  it('matches rzp_test_ prefix', () => {
+    expect(matches('Razorpay Test Key ID', 'rzp_test_' + 'ILgsfZCgtR14Qa')).toBe(true);
+  });
+  it('matches longer key', () => {
+    expect(matches('Razorpay Test Key ID', 'rzp_test_' + 'AbCdEfGh1234567890')).toBe(true);
+  });
+  it('does not match live prefix', () => {
+    expect(findPattern('Razorpay Test Key ID').pattern.test('rzp_live_ILgsfZCgtR14Qa')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Razorpay Test Key ID', 'rzp_test_abc')).toBe(false);
+  });
+});
+
+describe('Razorpay Key Secret', () => {
+  it('matches env var assignment', () => {
+    expect(matches('Razorpay Key Secret', 'RAZORPAY_KEY_SECRET=' + 'D4mXtPq7nR2sWzYk')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Razorpay Key Secret', 'RAZORPAY_KEY_SECRET="' + 'aB3cD4eF5gH6iJ7k' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Razorpay Key Secret', 'KEY_SECRET=' + 'D4mXtPq7nR2sWzYk')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Razorpay Key Secret', 'RAZORPAY_KEY_SECRET=abc')).toBe(false);
+  });
+});
+
+describe('Adyen API Key', () => {
+  it('matches env var assignment', () => {
+    expect(matches('Adyen API Key', 'ADYEN_API_KEY=' + 'AQEyhmfxK4PJahZCw0m12jE8aeFdH3pV' + 'a1b2c3d4')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Adyen API Key', 'ADYEN_API_KEY="' + 'deadbeef01234567890abcdef012345678' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Adyen API Key', 'API_KEY=' + 'AQEyhmfxK4PJahZCw0m12jE8aeFdH3pV' + 'a1b2c3d4')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Adyen API Key', 'ADYEN_API_KEY=abc123')).toBe(false);
+  });
+});
+
+describe('Lemon Squeezy API Key', () => {
+  it('matches LEMON_SQUEEZY_API_KEY assignment', () => {
+    expect(matches('Lemon Squeezy API Key', 'LEMON_SQUEEZY_API_KEY=' + 'eyJ0eXAiOiJKV1QiLCJhbGc')).toBe(true);
+  });
+  it('matches LEMONSQUEEZY_API_KEY assignment', () => {
+    expect(matches('Lemon Squeezy API Key', 'LEMONSQUEEZY_API_KEY="' + 'ls_api_key_value_1234567890' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Lemon Squeezy API Key', 'SQUEEZY_KEY=' + 'eyJ0eXAiOiJKV1QiLCJhbGc')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Lemon Squeezy API Key', 'LEMON_SQUEEZY_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Lemon Squeezy Signing Secret', () => {
+  it('matches LEMON_SQUEEZY_SIGNING_SECRET assignment', () => {
+    expect(matches('Lemon Squeezy Signing Secret', 'LEMON_SQUEEZY_SIGNING_SECRET=' + 'sqz_sig_abcdefghij12345678')).toBe(true);
+  });
+  it('matches LEMONSQUEEZY_SIGNING_SECRET assignment', () => {
+    expect(matches('Lemon Squeezy Signing Secret', 'LEMONSQUEEZY_SIGNING_SECRET="' + 'whsec_abcdefghij1234567890' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Lemon Squeezy Signing Secret', 'SIGNING_SECRET=' + 'sqz_sig_abcdefghij12345678')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Lemon Squeezy Signing Secret', 'LEMON_SQUEEZY_SIGNING_SECRET=abc')).toBe(false);
+  });
+});
+
+describe('Paddle API Key', () => {
+  it('matches env var assignment', () => {
+    expect(matches('Paddle API Key', 'PADDLE_API_KEY=' + 'pdl_live_apikey_abcdef123')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Paddle API Key', 'PADDLE_API_KEY="' + 'pdl_sandbox_key_1234567890' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Paddle API Key', 'API_KEY=' + 'pdl_live_apikey_abcdef123')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Paddle API Key', 'PADDLE_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Paddle Webhook Secret', () => {
+  it('matches env var assignment', () => {
+    expect(matches('Paddle Webhook Secret', 'PADDLE_WEBHOOK_SECRET=' + 'pdl_ntfn_abcdefghij12345')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Paddle Webhook Secret', 'PADDLE_WEBHOOK_SECRET="' + 'whsec_paddle_1234567890abc' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Paddle Webhook Secret', 'WEBHOOK_SECRET=' + 'pdl_ntfn_abcdefghij12345')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Paddle Webhook Secret', 'PADDLE_WEBHOOK_SECRET=abc')).toBe(false);
+  });
+});
+
+describe('Recurly API Key', () => {
+  it('matches env var assignment', () => {
+    expect(matches('Recurly API Key', 'RECURLY_API_KEY=' + 'recurly_private_key_abcdef')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Recurly API Key', 'RECURLY_API_KEY="' + 'abcdef1234567890abcdef12' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Recurly API Key', 'API_KEY=' + 'recurly_private_key_abcdef')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Recurly API Key', 'RECURLY_API_KEY=abc')).toBe(false);
+  });
+});
+
 // ── Severity checks ───────────────────────────────────────────────────────────
 
 describe('pattern severity', () => {
