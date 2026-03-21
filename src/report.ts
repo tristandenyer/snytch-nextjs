@@ -287,11 +287,13 @@ function renderSuppressionsTab(result: ScanResult, projectRoot: string, today: s
       </div>
       <div class="suppress-legend-item">
         <span class="badge badge-expired">EXPIRED</span>
-        <span>The suppression rule's <code>until</code> date has passed. The rule is no longer excluding any findings — remove or extend it in <code>snytch.config.js</code>.</span>
+        <span>The suppression rule's <code>until</code> date has passed. The rule is no longer excluding any findings.</span>
       </div>
     </div>`;
 
-  return `${legend}<div class="suppress-list">${cards}${expiredOnlyCards}</div>`;
+  const managedNote = `<p class="suppress-managed-note">Suppressions are managed in <code>snytch.config.js</code>.</p>`;
+
+  return `${managedNote}${legend}<div class="suppress-list">${cards}${expiredOnlyCards}</div>`;
 }
 
 function buildHtml(
@@ -618,6 +620,12 @@ function buildHtml(
     }
 
     /* ── Suppressions tab ───────────────────────────────── */
+    .suppress-managed-note {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text1);
+      margin: 0 0 16px 0;
+    }
     .suppress-legend {
       display: flex;
       flex-direction: column;
