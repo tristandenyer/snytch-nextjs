@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import { readFileSync, existsSync } from 'fs';
 import { join, relative, dirname } from 'path';
 import { GitCommit, GitContext } from './types.js';
@@ -186,17 +186,18 @@ export function isGitRepo(cwd: string): boolean {
 export function getGitLog(filePath: string, projectRoot: string): GitCommit[] {
   try {
     const relFile = relative(projectRoot, filePath);
-    const output = execSync(
-      `git log --follow --format="%H|%an|%ae|%ar|%s" -${GIT_LOG_LIMIT} -- "${relFile}"`,
+    // Use spawnSync with an args array — never interpolate relFile into a shell string
+    const result = spawnSync(
+      'git',
+      ['log', '--follow', `--format=%H|%an|%ae|%ar|%s`, `-${GIT_LOG_LIMIT}`, '--', relFile],
       {
         cwd: projectRoot,
         stdio: ['ignore', 'pipe', 'ignore'],
-        // Hard cap on output to prevent ReDoS-like runaway on huge repos
+        // Hard cap on output to prevent runaway on huge repos
         maxBuffer: 1024 * 256,
       },
-    )
-      .toString()
-      .trim();
+    );
+    const output = (result.stdout as Buffer).toString().trim();
 
     if (!output) return [];
 

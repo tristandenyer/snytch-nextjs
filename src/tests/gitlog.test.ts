@@ -11,17 +11,24 @@ vi.mock('fs', () => ({
 
 vi.mock('child_process', () => ({
   execSync: vi.fn(),
+  spawnSync: vi.fn(),
 }));
 
 import { readFileSync, existsSync } from 'fs';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 const mockReadFileSync = vi.mocked(readFileSync);
 const mockExistsSync = vi.mocked(existsSync);
 const mockExecSync = vi.mocked(execSync);
+const mockSpawnSync = vi.mocked(spawnSync);
 
 beforeEach(() => {
   vi.resetAllMocks();
 });
+
+/** Build a minimal SpawnSyncReturns-compatible object for mockSpawnSync. */
+function spawnResult(stdout: string) {
+  return { pid: 0, output: [], stdout: Buffer.from(stdout), stderr: Buffer.from(''), status: 0, signal: null };
+}
 
 // ── isGitRepo ─────────────────────────────────────────────────────────────────
 
@@ -43,14 +50,12 @@ describe('isGitRepo', () => {
 
 describe('getGitLog', () => {
   it('parses well-formed git log output into commit objects', () => {
-    mockExecSync.mockReturnValue(
-      Buffer.from(
-        [
-          'abc1234|Alice Dev|alice@example.com|2 days ago|feat: add stripe integration',
-          'def5678|Bob Fix|bob@example.com|1 week ago|fix: remove hardcoded key',
-        ].join('\n'),
-      ),
-    );
+    mockSpawnSync.mockReturnValue(spawnResult(
+      [
+        'abc1234|Alice Dev|alice@example.com|2 days ago|feat: add stripe integration',
+        'def5678|Bob Fix|bob@example.com|1 week ago|fix: remove hardcoded key',
+      ].join('\n'),
+    ));
 
     const log = getGitLog('/project/src/lib/stripe.ts', '/project');
 
@@ -66,36 +71,32 @@ describe('getGitLog', () => {
   });
 
   it('returns empty array when git log output is empty', () => {
-    mockExecSync.mockReturnValue(Buffer.from(''));
+    mockSpawnSync.mockReturnValue(spawnResult(''));
     expect(getGitLog('/project/src/lib/config.ts', '/project')).toEqual([]);
   });
 
-  it('returns empty array when execSync throws', () => {
-    mockExecSync.mockImplementation(() => {
+  it('returns empty array when spawnSync throws', () => {
+    mockSpawnSync.mockImplementation(() => {
       throw new Error('git: command not found');
     });
     expect(getGitLog('/project/src/lib/config.ts', '/project')).toEqual([]);
   });
 
   it('handles commit messages that contain pipe characters', () => {
-    mockExecSync.mockReturnValue(
-      Buffer.from('abc1234|Dev Name|dev@x.com|3 hours ago|feat: support env|vars in config'),
-    );
+    mockSpawnSync.mockReturnValue(spawnResult('abc1234|Dev Name|dev@x.com|3 hours ago|feat: support env|vars in config'));
 
     const log = getGitLog('/project/src/lib/env.ts', '/project');
     expect(log[0].message).toBe('feat: support env|vars in config');
   });
 
   it('skips malformed lines (fewer than 5 pipe-separated fields)', () => {
-    mockExecSync.mockReturnValue(
-      Buffer.from(
-        [
-          'abc1234|Alice|alice@x.com|1 day ago|valid commit',
-          'bad-line-without-enough-fields',
-          'def5678|Bob|bob@x.com|2 days ago|another valid commit',
-        ].join('\n'),
-      ),
-    );
+    mockSpawnSync.mockReturnValue(spawnResult(
+      [
+        'abc1234|Alice|alice@x.com|1 day ago|valid commit',
+        'bad-line-without-enough-fields',
+        'def5678|Bob|bob@x.com|2 days ago|another valid commit',
+      ].join('\n'),
+    ));
 
     const log = getGitLog('/project/src/lib/api.ts', '/project');
     expect(log).toHaveLength(2);
@@ -103,13 +104,13 @@ describe('getGitLog', () => {
   });
 
   it('passes the relative file path to git log', () => {
-    mockExecSync.mockReturnValue(Buffer.from(''));
+    mockSpawnSync.mockReturnValue(spawnResult(''));
     getGitLog('/project/src/lib/stripe.ts', '/project');
 
-    const call = mockExecSync.mock.calls[0][0] as string;
-    expect(call).toContain('src/lib/stripe.ts');
-    expect(call).toContain('git log');
-    expect(call).toContain('--follow');
+    const args = mockSpawnSync.mock.calls[0][1] as string[];
+    expect(args).toContain('src/lib/stripe.ts');
+    expect(args).toContain('log');
+    expect(args).toContain('--follow');
   });
 });
 

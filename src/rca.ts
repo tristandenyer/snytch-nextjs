@@ -66,6 +66,14 @@ function buildPrompt(finding: Finding, nextVersion: string): string {
       ].join('\n')
     : `Source file: ${sourceFile}\nNo git history available.`;
 
+  // Sanitize commit message — strip any visible secret prefix in case a developer
+  // accidentally included a credential in their commit message text.
+  let sanitizedGitSection = gitSection;
+  if (finding.truncatedValue) {
+    const { payload } = stripSecretValues(gitSection, finding.truncatedValue);
+    sanitizedGitSection = payload;
+  }
+
   return `You are a senior security engineer performing a root cause analysis (RCA) for a secret leakage finding in a Next.js application.
 
 ## Finding details
@@ -78,7 +86,7 @@ Char offset:     ${finding.charOffset}
 Truncated value: ${finding.truncatedValue}  ← context only, do NOT reference the actual secret
 
 ## Git provenance
-${gitSection}
+${sanitizedGitSection}
 
 ## Environment
 Next.js version: ${nextVersion}

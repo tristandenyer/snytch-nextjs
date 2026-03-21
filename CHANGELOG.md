@@ -4,6 +4,20 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [0.1.5] — 2026-03-21
+
+### Security
+
+- Fixed shell injection in `gitlog.ts`: replaced `execSync` with interpolated shell string with `spawnSync` + args array. No user-controlled input was reachable in practice, but the pattern violated the tool's own security standards.
+- Fixed shell injection in `report.ts`: replaced all three `execSync` browser-open calls with `spawnSync` + args array.
+- Fixed potential secret leakage in AI RCA prompts: commit messages are now sanitized with `stripSecretValues` before being sent to the AI provider.
+
+### Tests
+
+- Updated `gitlog.test.ts` to mock `spawnSync` instead of `execSync` for `getGitLog` tests, matching the refactored implementation.
+
+---
+
 ## [0.1.4] — 2026-03-21
 
 ### Fixed

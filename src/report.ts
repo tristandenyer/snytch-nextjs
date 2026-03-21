@@ -1,6 +1,6 @@
 import { writeFileSync, mkdirSync } from 'fs';
 import { join, relative } from 'path';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions, CheckFinding, DiffResult, DiffOptions, RcaResult } from './types.js';
 
 /** Returns (and creates if needed) the snytch-reports/ output directory. */
@@ -662,12 +662,12 @@ export function generateCheckReport(
   console.log(`  report written to ${relative(options.projectRoot, outputPath)}`);
 
   try {
-    const platform = process.platform;
     const cmd =
-      platform === 'darwin' ? 'open' :
-      platform === 'win32'  ? 'start' :
-                              'xdg-open';
-    execSync(`${cmd} "${outputPath}"`, { stdio: 'ignore' });
+      process.platform === 'darwin' ? 'open' :
+      process.platform === 'win32'  ? 'start' :
+                                      'xdg-open';
+    // Use spawnSync with an args array — never interpolate outputPath into a shell string
+    spawnSync(cmd, [outputPath], { stdio: 'ignore' });
   } catch {
     // Browser open failed — user can open manually
   }
@@ -830,12 +830,11 @@ export function generateDiffReport(result: DiffResult, options: DiffOptions): vo
   console.log(`  report written to ${relative(options.projectRoot, outputPath)}`);
 
   try {
-    const platform = process.platform;
     const cmd =
-      platform === 'darwin' ? 'open' :
-      platform === 'win32'  ? 'start' :
-                              'xdg-open';
-    execSync(`${cmd} "${outputPath}"`, { stdio: 'ignore' });
+      process.platform === 'darwin' ? 'open' :
+      process.platform === 'win32'  ? 'start' :
+                                      'xdg-open';
+    spawnSync(cmd, [outputPath], { stdio: 'ignore' });
   } catch {
     // Browser open failed — user can open the file manually
   }
@@ -856,12 +855,11 @@ export function generateReport(
 
   // Open in default browser — best-effort, never throw
   try {
-    const platform = process.platform;
     const cmd =
-      platform === 'darwin' ? 'open' :
-      platform === 'win32'  ? 'start' :
-                              'xdg-open';
-    execSync(`${cmd} "${outputPath}"`, { stdio: 'ignore' });
+      process.platform === 'darwin' ? 'open' :
+      process.platform === 'win32'  ? 'start' :
+                                      'xdg-open';
+    spawnSync(cmd, [outputPath], { stdio: 'ignore' });
   } catch {
     // Browser open failed silently; user can open the file manually
   }
