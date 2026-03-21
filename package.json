@@ -1,6 +1,6 @@
 {
   "name": "@snytch/nextjs",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Bundle scanning, NEXT_PUBLIC_ exposure detection, and environment drift for Next.js",
   "type": "module",
   "main": "./dist/cli.js",

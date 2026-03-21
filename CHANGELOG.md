@@ -4,6 +4,18 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [0.1.4] — 2026-03-21
+
+### Fixed
+
+- README screenshots now use absolute `raw.githubusercontent.com` URLs so they render correctly on the npm package page.
+
+### Changed
+
+- Updated features list to accurately reflect 170+ patterns across all covered categories (AI/ML keys, auth providers, monitoring tools, and high-entropy heuristics were previously unlisted).
+
+---
+
 ## [0.1.3] — 2026-03-21
 
 ### Changed
