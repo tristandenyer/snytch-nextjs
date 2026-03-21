@@ -36,7 +36,14 @@ npm install -D @snytch/nextjs
 Scan the compiled Next.js bundle for leaked secrets in client-side JavaScript.
 
 ```bash
-snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none]
+# Basic scan — prints findings to the terminal
+snytch scan
+
+# Generate an HTML report and fail the build on any critical finding
+snytch scan --report --fail-on critical
+
+# Use a custom .next directory
+snytch scan --dir ./apps/web/.next
 ```
 
 | Option          | Default     | Description                                                                                                   |
@@ -54,13 +61,14 @@ snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all]
 Check `.env` files for `NEXT_PUBLIC_` variables that look like secrets. Any variable prefixed with `NEXT_PUBLIC_` is embedded into the client bundle at build time and sent to every browser that loads your app. This command flags values that match known secret patterns or look high-entropy enough to be credentials.
 
 ```bash
-snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|all]
-```
+# Auto-detect .env files in the current directory
+snytch check
 
-`--env` may be repeated to check multiple files:
-
-```bash
+# Check specific files
 snytch check --env .env.local --env .env.production
+
+# Generate an HTML report
+snytch check --env .env.local --report
 ```
 
 | Option      | Default       | Description                                             |
@@ -77,13 +85,14 @@ Compare environment variable key presence across two or more `.env` files. "Drif
 `snytch diff` only compares key names, never values. It tells you what is missing or mismatched, not what the values are.
 
 ```bash
-snytch diff --env .env.staging --env .env.production [--json] [--report] [--strict]
-```
+# Compare two environments
+snytch diff --env .env.staging --env .env.production
 
-`--env` may be repeated for more than two files:
-
-```bash
+# Compare three environments
 snytch diff --env .env.staging --env .env.production --env .env.local
+
+# Generate an HTML report and exit 1 for any drift (not just serverOnly keys)
+snytch diff --env .env.staging --env .env.production --report --strict
 ```
 
 | Option     | Default  | Description                                             |

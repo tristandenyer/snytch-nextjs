@@ -12,7 +12,7 @@
     }
   },
   "bin": {
-    "snytch": "./dist/cli.js"
+    "snytch": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
