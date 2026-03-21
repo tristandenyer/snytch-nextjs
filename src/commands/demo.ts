@@ -98,6 +98,15 @@ const SCAN_FINDINGS: Finding[] = [
     truncatedValue: 'sk_live_•••',
   },
   {
+    type: 'pattern-match',
+    patternName: 'Fly.io API Token',
+    severity: 'critical',
+    description: 'Fly.io API token found in client bundle',
+    filePath: `${CHUNKS_DIR}/main-d9a721cc.js`,
+    charOffset: 3920,
+    truncatedValue: 'FlyV1 fm•••',
+  },
+  {
     type: 'sourcemap-secret',
     patternName: 'Twilio Auth Token',
     severity: 'warning',

@@ -1288,5 +1288,79 @@ export const PATTERNS: SecretPattern[] = [
     severity: 'critical',
     description: 'Upstash Kafka REST API token',
   },
+
+  // CircleCI (Category 76)
+  {
+    name: 'CircleCI API Token',
+    pattern: new RegExp("CIRCLE(?:CI)?_TOKEN['\"]?\\s*[:=]\\s*['\"]?([a-f0-9]{40})", "gi"),
+    severity: 'critical',
+    description: 'CircleCI API token',
+  },
+
+  // Travis CI (Category 77)
+  {
+    name: 'Travis CI API Token',
+    pattern: new RegExp("TRAVIS_(?:API_)?TOKEN['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Travis CI API token',
+  },
+
+  // Buildkite (Category 78)
+  {
+    name: 'Buildkite Agent Token',
+    pattern: /bkp_[a-f0-9]{40,}/g,
+    severity: 'critical',
+    description: 'Buildkite pipeline or agent token',
+  },
+  {
+    name: 'Buildkite API Token',
+    pattern: new RegExp("BUILDKITE_(?:API_|AGENT_)?TOKEN['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Buildkite API or agent token in env/config assignment',
+  },
+
+  // Railway (Category 79)
+  {
+    name: 'Railway API Token',
+    pattern: new RegExp("RAILWAY_TOKEN['\"]?\\s*[:=]\\s*['\"]?([a-f0-9-]{36,})", "gi"),
+    severity: 'critical',
+    description: 'Railway deployment token',
+  },
+
+  // Render (Category 80)
+  {
+    name: 'Render API Key',
+    pattern: /rnd_[a-zA-Z0-9]{32,}/g,
+    severity: 'critical',
+    description: 'Render service API key',
+  },
+  {
+    name: 'Render API Key Assignment',
+    pattern: new RegExp("RENDER_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Render API key in env/config assignment',
+  },
+
+  // Fly.io (Category 81)
+  {
+    name: 'Fly.io API Token',
+    pattern: /FlyV1\s+[a-zA-Z0-9_-]{20,}/g,
+    severity: 'critical',
+    description: 'Fly.io V1 API token',
+  },
+  {
+    name: 'Fly.io Auth Token Assignment',
+    pattern: new RegExp("FLY_API_TOKEN['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Fly.io auth token in env/config assignment',
+  },
+
+  // Pulumi (Category 82)
+  {
+    name: 'Pulumi Access Token',
+    pattern: /pul-[a-f0-9]{40,}/g,
+    severity: 'critical',
+    description: 'Pulumi access token',
+  },
 ];
 

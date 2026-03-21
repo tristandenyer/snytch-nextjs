@@ -14,6 +14,15 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **CI/CD and deployment platform patterns**: CircleCI, Travis CI, Buildkite (agent + API tokens), Railway, Render (`rnd_` prefix + env var), Fly.io (`FlyV1` bearer + env var), Pulumi (`pul-` prefix).
+- Pattern count increased from 192 to 202.
+
+---
+
 ## [0.4.0] — 2026-03-21
 
 ### Security

@@ -541,6 +541,158 @@ describe('Upstash Kafka REST Token', () => {
   });
 });
 
+// ── CI/CD & Deployment Platforms (Phase 2) ────────────────────────────────────
+
+describe('CircleCI API Token', () => {
+  it('matches CIRCLECI_TOKEN assignment', () => {
+    expect(matches('CircleCI API Token', 'CIRCLECI_TOKEN=' + 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2')).toBe(true);
+  });
+  it('matches CIRCLE_TOKEN assignment', () => {
+    expect(matches('CircleCI API Token', 'CIRCLE_TOKEN="' + 'deadbeef01234567890abcdef01234567890abcd' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('CircleCI API Token', 'MY_TOKEN=' + 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('CircleCI API Token', 'CIRCLECI_TOKEN=abc123')).toBe(false);
+  });
+});
+
+describe('Travis CI API Token', () => {
+  it('matches TRAVIS_TOKEN assignment', () => {
+    expect(matches('Travis CI API Token', 'TRAVIS_TOKEN=' + 'travisci_token_value_abc')).toBe(true);
+  });
+  it('matches TRAVIS_API_TOKEN assignment', () => {
+    expect(matches('Travis CI API Token', 'TRAVIS_API_TOKEN="' + 'myTravisApiTokenValue123' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Travis CI API Token', 'CI_TOKEN=' + 'travisci_token_value_abc')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Travis CI API Token', 'TRAVIS_TOKEN=short')).toBe(false);
+  });
+});
+
+describe('Buildkite Agent Token', () => {
+  it('matches bkp_ prefix token', () => {
+    expect(matches('Buildkite Agent Token', 'bkp_' + 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0')).toBe(true);
+  });
+  it('matches longer bkp_ token', () => {
+    expect(matches('Buildkite Agent Token', 'token=bkp_' + 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefaa')).toBe(true);
+  });
+  it('does not match without bkp_ prefix', () => {
+    expect(matches('Buildkite Agent Token', 'bk_' + 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Buildkite Agent Token', 'bkp_abc123')).toBe(false);
+  });
+});
+
+describe('Buildkite API Token', () => {
+  it('matches BUILDKITE_API_TOKEN assignment', () => {
+    expect(matches('Buildkite API Token', 'BUILDKITE_API_TOKEN=' + 'bk_agent_token_value_1234')).toBe(true);
+  });
+  it('matches BUILDKITE_AGENT_TOKEN assignment', () => {
+    expect(matches('Buildkite API Token', 'BUILDKITE_AGENT_TOKEN="' + 'agent_token_abcdef123456' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Buildkite API Token', 'BK_TOKEN=' + 'bk_agent_token_value_1234')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Buildkite API Token', 'BUILDKITE_API_TOKEN=abc')).toBe(false);
+  });
+});
+
+describe('Railway API Token', () => {
+  it('matches RAILWAY_TOKEN with UUID-like value', () => {
+    expect(matches('Railway API Token', 'RAILWAY_TOKEN=' + 'a1b2c3d4-e5f6-7890-abcd-ef0123456789')).toBe(true);
+  });
+  it('matches quoted RAILWAY_TOKEN', () => {
+    expect(matches('Railway API Token', 'RAILWAY_TOKEN="' + 'deadbeef-1234-5678-9abc-def012345678' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Railway API Token', 'DEPLOY_TOKEN=' + 'a1b2c3d4-e5f6-7890-abcd-ef0123456789')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Railway API Token', 'RAILWAY_TOKEN=abc-123')).toBe(false);
+  });
+});
+
+describe('Render API Key', () => {
+  it('matches rnd_ prefix key', () => {
+    expect(matches('Render API Key', 'rnd_' + 'AbCdEfGhIjKlMnOpQrStUvWxYz012345')).toBe(true);
+  });
+  it('matches in assignment context', () => {
+    expect(matches('Render API Key', 'key=rnd_' + 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6')).toBe(true);
+  });
+  it('does not match without rnd_ prefix', () => {
+    expect(matches('Render API Key', 'rnx_' + 'AbCdEfGhIjKlMnOpQrStUvWxYz012345')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Render API Key', 'rnd_abc123')).toBe(false);
+  });
+});
+
+describe('Render API Key Assignment', () => {
+  it('matches RENDER_API_KEY assignment', () => {
+    expect(matches('Render API Key Assignment', 'RENDER_API_KEY=' + 'render_key_value_abcdef12')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Render API Key Assignment', 'RENDER_API_KEY="' + 'rnd_someRenderKeyValue1234' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Render API Key Assignment', 'API_KEY=' + 'render_key_value_abcdef12')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Render API Key Assignment', 'RENDER_API_KEY=short')).toBe(false);
+  });
+});
+
+describe('Fly.io API Token', () => {
+  it('matches FlyV1 token', () => {
+    expect(matches('Fly.io API Token', 'FlyV1 ' + 'fm2_lJPECDNEIME0M1TAKA')).toBe(true);
+  });
+  it('matches FlyV1 with longer token', () => {
+    expect(matches('Fly.io API Token', 'Authorization: FlyV1 ' + 'abcdef1234567890_token-v')).toBe(true);
+  });
+  it('does not match without FlyV1 prefix', () => {
+    expect(matches('Fly.io API Token', 'FlyV2 ' + 'fm2_lJPECDNEIME0M1TAKA')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Fly.io API Token', 'FlyV1 abc')).toBe(false);
+  });
+});
+
+describe('Fly.io Auth Token Assignment', () => {
+  it('matches FLY_API_TOKEN assignment', () => {
+    expect(matches('Fly.io Auth Token Assignment', 'FLY_API_TOKEN=' + 'fo1_xyzABCDEFGHIJKLMNOPQRS')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Fly.io Auth Token Assignment', 'FLY_API_TOKEN="' + 'fly_token_value_1234567890' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Fly.io Auth Token Assignment', 'API_TOKEN=' + 'fo1_xyzABCDEFGHIJKLMNOPQRS')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Fly.io Auth Token Assignment', 'FLY_API_TOKEN=abc')).toBe(false);
+  });
+});
+
+describe('Pulumi Access Token', () => {
+  it('matches pul- prefix token', () => {
+    expect(matches('Pulumi Access Token', 'pul-' + 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0')).toBe(true);
+  });
+  it('matches in assignment context', () => {
+    expect(matches('Pulumi Access Token', 'PULUMI_ACCESS_TOKEN=pul-' + 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefaa')).toBe(true);
+  });
+  it('does not match without pul- prefix', () => {
+    expect(matches('Pulumi Access Token', 'pu-' + 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Pulumi Access Token', 'pul-abc123')).toBe(false);
+  });
+});
+
 // ── Severity checks ───────────────────────────────────────────────────────────
 
 describe('pattern severity', () => {
