@@ -5,6 +5,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/@snytch/nextjs)](https://www.npmjs.com/package/@snytch/nextjs)
 [![Node.js >=18](https://img.shields.io/node/v/@snytch/nextjs)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Socket Badge](https://socket.dev/api/badge/npm/package/@snytch/nextjs)](https://socket.dev/npm/package/@snytch/nextjs)
 
 Bundle scanning, secret detection, and environment exposure analysis for Next.js applications.
 
