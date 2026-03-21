@@ -44,6 +44,7 @@ function renderFindingCard(finding: Finding, projectRoot: string): string {
     'next-data': '__NEXT_DATA__',
     'config-env': 'next.config env',
     'middleware-secret': 'edge middleware',
+    'sourcemap-secret': 'source map',
     'value-match': 'value match',
     'pattern-match': '',
   };
@@ -193,6 +194,7 @@ function renderSuppressCard(sf: SuppressedFinding, projectRoot: string, today: s
     'next-data': '__NEXT_DATA__',
     'config-env': 'next.config env',
     'middleware-secret': 'edge middleware',
+    'sourcemap-secret': 'source map',
     'value-match': 'value match',
     'pattern-match': 'client bundle',
   };

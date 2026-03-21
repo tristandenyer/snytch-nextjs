@@ -1,5 +1,5 @@
 export type Severity = 'critical' | 'warning' | 'info';
-export type FindingType = 'pattern-match' | 'value-match' | 'next-data' | 'config-env' | 'middleware-secret';
+export type FindingType = 'pattern-match' | 'value-match' | 'next-data' | 'config-env' | 'middleware-secret' | 'sourcemap-secret';
 export type FailOn = 'critical' | 'warning' | 'all';
 
 export interface SecretPattern {

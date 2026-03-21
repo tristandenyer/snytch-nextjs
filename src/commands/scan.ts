@@ -7,6 +7,7 @@ import { generateRcaForFindings } from '../rca.js';
 import { scanNextData } from '../nextdata.js';
 import { scanNextConfig } from '../configscan.js';
 import { scanMiddleware } from '../middlewarescan.js';
+import { scanSourceMaps, deduplicateSourceMapFindings } from '../sourcemapscan.js';
 import { applySuppressions } from '../suppress.js';
 import { Finding, ScanResult, ScanOptions } from '../types.js';
 
@@ -145,6 +146,15 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
   // Pass 3c: scan edge middleware
   const middlewareFindings = scanMiddleware(options.dir, options.projectRoot, config ?? {});
   findings.push(...middlewareFindings);
+
+  // Pass 3d: scan source maps — deduplicate against live bundle findings
+  const rawSourceMapFindings = scanSourceMaps(options.dir, options.projectRoot, config ?? {});
+  // Live bundle findings are those collected so far (pattern-match and value-match)
+  const liveBundleFindings = findings.filter(
+    (f) => f.type === 'pattern-match' || f.type === 'value-match',
+  );
+  const sourcemapFindings = deduplicateSourceMapFindings(rawSourceMapFindings, liveBundleFindings);
+  findings.push(...sourcemapFindings);
 
   // Pass 4: attach git context to each finding (cached per chunk file)
   const gitContextCache = new Map<string, ReturnType<typeof resolveGitContext>>();

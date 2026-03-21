@@ -23,6 +23,8 @@ function findingSurfaceLabel(finding: Finding): string {
       return chalk.dim('[next.config env]');
     case 'middleware-secret':
       return chalk.dim('[edge middleware]');
+    case 'sourcemap-secret':
+      return chalk.dim('[source map]');
     case 'value-match':
     case 'pattern-match':
     default:

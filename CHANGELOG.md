@@ -4,6 +4,17 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [0.3.0] — 2026-03-21
+
+### Added
+
+- **Source map scanner** (`src/sourcemapscan.ts`): `snytch scan` now scans `.next/static/chunks/*.js.map` for secrets embedded in the `sourcesContent` array — the pre-minification source code stored by webpack/turbopack at build time. Secrets present at build time appear here even if tree-shaking removed them from the live bundle. Findings carry `type: 'sourcemap-secret'` and `severity: 'warning'` (never critical, since the value may not be reachable at runtime).
+- **Source map deduplication**: if a secret value is found in both the live bundle and a source map, the source map duplicate is dropped. The live bundle finding (already critical) takes precedence and the source map copy adds no new signal.
+- Surface label `[source map]` in terminal output and `· source map` in HTML report findings cards for source map findings.
+- `serverOnly` value matching in source maps: env vars listed in `snytch.config.js` `serverOnly` are now also checked against `sourcesContent`, consistent with the live bundle scanner.
+
+---
+
 ## [0.2.0] — 2026-03-21
 
 ### Added
