@@ -71,12 +71,12 @@ snytch check --env .env.local --env .env.production
 snytch check --env .env.local --report
 ```
 
-| Option      | Default       | Description                                             |
-| ----------- | ------------- | ------------------------------------------------------- |
-| `--env`     | auto-detected | Path to a `.env` file. Repeat for multiple files.       |
-| `--json`    | off           | Output results as JSON                                  |
+| Option      | Default       | Description                                                            |
+| ----------- | ------------- | ---------------------------------------------------------------------- |
+| `--env`     | auto-detected | Path to a `.env` file. Repeat for multiple files.                      |
+| `--json`    | off           | Output results as JSON                                                 |
 | `--report`  | off           | Generate an HTML report at `./snytch-reports/snytch-check-report.html` |
-| `--fail-on` | `critical`    | Exit code threshold: `critical`, `warning`, or `all`    |
+| `--fail-on` | `critical`    | Exit code threshold: `critical`, `warning`, or `all`                   |
 
 ### `snytch diff`
 
@@ -95,12 +95,12 @@ snytch diff --env .env.staging --env .env.production --env .env.local
 snytch diff --env .env.staging --env .env.production --report --strict
 ```
 
-| Option     | Default  | Description                                             |
-| ---------- | -------- | ------------------------------------------------------- |
-| `--env`    | required | Path to a `.env` file. Must be provided at least twice. |
-| `--json`   | off      | Output results as JSON                                  |
-| `--report` | off      | Generate an HTML report at `./snytch-reports/snytch-diff-report.html`  |
-| `--strict` | off      | Exit 1 for any drift, not just `serverOnly` keys        |
+| Option     | Default  | Description                                                           |
+| ---------- | -------- | --------------------------------------------------------------------- |
+| `--env`    | required | Path to a `.env` file. Must be provided at least twice.               |
+| `--json`   | off      | Output results as JSON                                                |
+| `--report` | off      | Generate an HTML report at `./snytch-reports/snytch-diff-report.html` |
+| `--strict` | off      | Exit 1 for any drift, not just `serverOnly` keys                      |
 
 ![Diff report showing environment variable drift across .env files, with keys that are missing or only present in one environment](./docs/screenshots/snytch-diff-report.png)
 
@@ -124,11 +124,11 @@ snytch demo
 
 Three report files are generated in your current directory:
 
-| File                                        | Contents                                           |
-| ------------------------------------------- | -------------------------------------------------- |
-| `snytch-reports/snytch-report.html`         | Bundle scan findings with Findings and AI RCA tabs |
-| `snytch-reports/snytch-check-report.html`   | `NEXT_PUBLIC_` exposure findings                   |
-| `snytch-reports/snytch-diff-report.html`    | Environment variable drift across `.env` files     |
+| File                                      | Contents                                           |
+| ----------------------------------------- | -------------------------------------------------- |
+| `snytch-reports/snytch-report.html`       | Bundle scan findings with Findings and AI RCA tabs |
+| `snytch-reports/snytch-check-report.html` | `NEXT_PUBLIC_` exposure findings                   |
+| `snytch-reports/snytch-diff-report.html`  | Environment variable drift across `.env` files     |
 
 > Add this to your `.gitignore` to avoid committing the reports directory:
 >
@@ -155,15 +155,19 @@ You will be prompted to delete the generated report files when the demo complete
 ## Features
 
 - Scans `.next/static/chunks` recursively for JavaScript and CSS files
-- Detects 150+ secret patterns including:
-  - AWS access keys and credentials
-  - Stripe API keys (live and test)
-  - Database connection strings with passwords
-  - GitHub personal access tokens
-  - Slack and Twilio tokens
-  - Private keys (RSA, EC, OpenSSH)
-  - JWT tokens and bearer tokens
-  - API keys from major cloud providers (Google, Azure, Firebase, etc.)
+- Detects 170+ secret patterns including:
+  - AWS access keys, session tokens, and resource ARNs
+  - Stripe, Square, PayPal, Braintree, and Coinbase keys
+  - Database connection strings (PostgreSQL, MySQL, MongoDB, Redis, Elasticsearch, and more)
+  - GitHub, GitLab, and Bitbucket tokens (classic and fine-grained)
+  - Slack, Discord, Twilio, SendGrid, Mailgun, and Postmark tokens
+  - Private keys (RSA, EC, DSA, OpenSSH, PGP)
+  - JWT tokens, OAuth tokens, and high-entropy bearer tokens
+  - Cloud provider keys (Google Cloud, Azure, Firebase, Cloudflare, DigitalOcean, Vercel, Heroku)
+  - AI and ML API keys (OpenAI, Anthropic, Cohere, Hugging Face, Replicate, Pinecone)
+  - Auth providers (Auth0, Okta)
+  - Monitoring and observability (Datadog, New Relic, Sentry, Splunk, Grafana)
+  - High-entropy string heuristics for unknown secret formats
 - AI root cause analysis via Claude (Anthropic) or GPT-4o (OpenAI) when `--report` is set
 - Git provenance for each finding (source file + introducing commit)
 - HTML report with per-finding details and editor prompts
@@ -279,11 +283,11 @@ The MCP server runs in the directory where your editor is opened, so it automati
 
 1. Open the Claude Desktop config file for your platform (create it if it doesn't exist):
 
-   | Platform | Path |
-   | -------- | ---- |
+   | Platform | Path                                                              |
+   | -------- | ----------------------------------------------------------------- |
    | macOS    | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-   | Windows  | `%APPDATA%\Claude\claude_desktop_config.json` |
-   | Linux    | `~/.config/Claude/claude_desktop_config.json` |
+   | Windows  | `%APPDATA%\Claude\claude_desktop_config.json`                     |
+   | Linux    | `~/.config/Claude/claude_desktop_config.json`                     |
 
 2. Add the following:
 
