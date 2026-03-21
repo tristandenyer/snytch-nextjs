@@ -1,0 +1,418 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { PATTERNS } from '../patterns.js';
+
+// Reset lastIndex before each test since all patterns use /g flag
+beforeEach(() => {
+  for (const p of PATTERNS) {
+    p.pattern.lastIndex = 0;
+  }
+});
+
+function findPattern(name: string) {
+  const p = PATTERNS.find((p) => p.name === name);
+  if (!p) throw new Error(`Pattern not found: ${name}`);
+  return p;
+}
+
+function matches(patternName: string, input: string): boolean {
+  const p = findPattern(patternName);
+  p.pattern.lastIndex = 0;
+  return p.pattern.test(input);
+}
+
+// ── AWS ──────────────────────────────────────────────────────────────────────
+
+describe('AWS Access Key ID (AKIA)', () => {
+  it('matches a valid AKIA key', () => {
+    expect(matches('AWS Access Key ID (AKIA)', 'AKIAIOSFODNN7EXAMPLE')).toBe(true);
+  });
+  it('does not match short key', () => {
+    expect(matches('AWS Access Key ID (AKIA)', 'AKIA12345')).toBe(false);
+  });
+});
+
+describe('AWS Access Key ID (ASIA)', () => {
+  it('matches a valid ASIA key', () => {
+    expect(matches('AWS Access Key ID (ASIA)', 'ASIAIOSFODNN7EXAMPLE')).toBe(true);
+  });
+  it('does not match AKIA prefix', () => {
+    expect(matches('AWS Access Key ID (ASIA)', 'AKIAIOSFODNN7EXAMPLE')).toBe(false);
+  });
+});
+
+describe('AWS Secret Access Key', () => {
+  it('matches key=value assignment', () => {
+    expect(matches('AWS Secret Access Key', 'aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).toBe(true);
+  });
+  it('matches with quotes', () => {
+    expect(matches('AWS Secret Access Key', 'aws_secret_access_key="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"')).toBe(true);
+  });
+  it('does not match short value', () => {
+    expect(matches('AWS Secret Access Key', 'aws_secret_access_key=short')).toBe(false);
+  });
+});
+
+// ── Stripe ───────────────────────────────────────────────────────────────────
+
+describe('Stripe Live Secret Key', () => {
+  it('matches sk_live_ prefix with 20+ chars', () => {
+    expect(matches('Stripe Live Secret Key', 'sk_live_abcdefghijklmnopqrstu')).toBe(true);
+  });
+  it('does not match test key', () => {
+    expect(matches('Stripe Live Secret Key', 'sk_test_abcdefghijklmnopqrstu')).toBe(false);
+  });
+  it('does not match too short', () => {
+    expect(matches('Stripe Live Secret Key', 'sk_live_short')).toBe(false);
+  });
+});
+
+describe('Stripe Test Secret Key', () => {
+  it('matches sk_test_ prefix', () => {
+    expect(matches('Stripe Test Secret Key', 'sk_test_abcdefghijklmnopqrstu')).toBe(true);
+  });
+  it('has warning severity', () => {
+    expect(findPattern('Stripe Test Secret Key').severity).toBe('warning');
+  });
+});
+
+describe('Stripe Webhook Signing Secret', () => {
+  it('matches whsec_ prefix', () => {
+    expect(matches('Stripe Webhook Signing Secret', 'whsec_abcdefghijklmnopqrstu12345')).toBe(true);
+  });
+  it('does not match short value', () => {
+    expect(matches('Stripe Webhook Signing Secret', 'whsec_short')).toBe(false);
+  });
+});
+
+// ── Private Keys ─────────────────────────────────────────────────────────────
+
+describe('RSA Private Key', () => {
+  it('matches PEM header', () => {
+    expect(matches('RSA Private Key', '-----BEGIN RSA PRIVATE KEY-----')).toBe(true);
+  });
+  it('does not match EC key header', () => {
+    expect(matches('RSA Private Key', '-----BEGIN EC PRIVATE KEY-----')).toBe(false);
+  });
+});
+
+describe('Generic Private Key', () => {
+  it('matches generic PEM header', () => {
+    expect(matches('Generic Private Key', '-----BEGIN PRIVATE KEY-----')).toBe(true);
+  });
+});
+
+describe('OpenSSH Private Key', () => {
+  it('matches OpenSSH header', () => {
+    expect(matches('OpenSSH Private Key', '-----BEGIN OPENSSH PRIVATE KEY-----')).toBe(true);
+  });
+});
+
+// ── JWT ──────────────────────────────────────────────────────────────────────
+
+describe('JWT Token', () => {
+  it('matches a real JWT structure', () => {
+    expect(
+      matches(
+        'JWT Token',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      ),
+    ).toBe(true);
+  });
+  it('does not match a plain string', () => {
+    expect(matches('JWT Token', 'not-a-jwt-token')).toBe(false);
+  });
+  it('does not match single base64 segment', () => {
+    expect(matches('JWT Token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9')).toBe(false);
+  });
+});
+
+// ── Database URLs ─────────────────────────────────────────────────────────────
+
+describe('PostgreSQL Connection String', () => {
+  it('matches postgres:// with credentials', () => {
+    expect(
+      matches('PostgreSQL Connection String', 'postgres://user:password@host:5432/db'),
+    ).toBe(true);
+  });
+  it('matches postgresql:// variant', () => {
+    expect(
+      matches('PostgreSQL Connection String', 'postgresql://user:pass@host/db'),
+    ).toBe(true);
+  });
+  it('does not match URL without password', () => {
+    // No colon between user and @
+    expect(matches('PostgreSQL Connection String', 'postgres://user@host/db')).toBe(false);
+  });
+});
+
+describe('MongoDB Connection String', () => {
+  it('matches mongodb:// with credentials', () => {
+    expect(
+      matches('MongoDB Connection String', 'mongodb://admin:secret123@cluster.host/dbname'),
+    ).toBe(true);
+  });
+});
+
+describe('MongoDB SRV Connection String', () => {
+  it('matches mongodb+srv://', () => {
+    expect(
+      matches('MongoDB SRV Connection String', 'mongodb+srv://user:pass@cluster.mongodb.net/db'),
+    ).toBe(true);
+  });
+});
+
+describe('Redis Connection String', () => {
+  it('matches redis:// URL', () => {
+    expect(matches('Redis Connection String', 'redis://localhost:6379')).toBe(true);
+  });
+  it('matches redis with password', () => {
+    expect(matches('Redis Connection String', 'redis://:mypassword@redis.host:6379')).toBe(true);
+  });
+});
+
+// ── GitHub Tokens ─────────────────────────────────────────────────────────────
+
+describe('GitHub Personal Access Token (ghp_)', () => {
+  it('matches ghp_ with 36 chars', () => {
+    expect(matches('GitHub Personal Access Token (ghp_)', 'ghp_' + 'A'.repeat(36))).toBe(true);
+  });
+  it('does not match too short', () => {
+    expect(matches('GitHub Personal Access Token (ghp_)', 'ghp_shorttoken')).toBe(false);
+  });
+});
+
+describe('GitHub OAuth Token (gho_)', () => {
+  it('matches gho_ with 36 chars', () => {
+    expect(matches('GitHub OAuth Token (gho_)', 'gho_' + 'B'.repeat(36))).toBe(true);
+  });
+});
+
+describe('GitHub App Installation Token (ghs_)', () => {
+  it('matches ghs_ with 36 chars', () => {
+    expect(matches('GitHub App Installation Token (ghs_)', 'ghs_' + 'C'.repeat(36))).toBe(true);
+  });
+});
+
+describe('GitHub Pat Token', () => {
+  it('matches github_pat_ prefix', () => {
+    expect(matches('GitHub Pat Token', 'github_pat_' + 'a'.repeat(22))).toBe(true);
+  });
+  it('does not match too short', () => {
+    expect(matches('GitHub Pat Token', 'github_pat_short')).toBe(false);
+  });
+});
+
+// ── Slack ─────────────────────────────────────────────────────────────────────
+
+describe('Slack Bot Token', () => {
+  it('matches xoxb- format', () => {
+    // Split to avoid GitHub push-protection false-positive on the xoxb- prefix
+    expect(matches('Slack Bot Token', 'xoxb' + '-12345678901-12345678901-abcdefghijklmnopqrstuvwx')).toBe(true);
+  });
+  it('does not match xoxp- format', () => {
+    expect(matches('Slack Bot Token', 'xoxp-12345678901-12345678901-12345678901-abcdefghijklmnopqrstuvwxyz012345')).toBe(false);
+  });
+});
+
+describe('Slack Incoming Webhook', () => {
+  it('matches hooks.slack.com URL', () => {
+    expect(
+      matches(
+        'Slack Incoming Webhook',
+        'https://hooks.slack.com/services/TXXXXXXXX/BXXXXXXXX/abcdefghijklmnop',
+      ),
+    ).toBe(true);
+  });
+});
+
+// ── SendGrid ──────────────────────────────────────────────────────────────────
+
+describe('SendGrid API Key', () => {
+  it('matches SG. prefix', () => {
+    expect(matches('SendGrid API Key', 'SG.abcdefghijklmnopqrstuv.wxyzABCDEFGHIJKLMNOPQRSTUV')).toBe(true);
+  });
+  it('does not match short value', () => {
+    expect(matches('SendGrid API Key', 'SG.short')).toBe(false);
+  });
+});
+
+// ── NPM ───────────────────────────────────────────────────────────────────────
+
+describe('NPM Token', () => {
+  it('matches npm_ with 36 chars', () => {
+    expect(matches('NPM Token', 'npm_' + 'a'.repeat(36))).toBe(true);
+  });
+  it('does not match too short', () => {
+    expect(matches('NPM Token', 'npm_shorttoken')).toBe(false);
+  });
+});
+
+// ── AI Service Keys ───────────────────────────────────────────────────────────
+
+describe('OpenAI API Key (sk-)', () => {
+  it('matches sk- with 20+ chars', () => {
+    expect(matches('OpenAI API Key (sk-)', 'sk-abcdefghijklmnopqrstuvwxyz123456')).toBe(true);
+  });
+});
+
+describe('Anthropic API Key', () => {
+  it('matches sk-ant- prefix', () => {
+    expect(matches('Anthropic API Key', 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz')).toBe(true);
+  });
+  it('does not match sk- without ant', () => {
+    // sk- alone hits OpenAI pattern, not Anthropic
+    expect(matches('Anthropic API Key', 'sk-abcdefghijklmnopqrstuvwxyz')).toBe(false);
+  });
+});
+
+describe('Hugging Face API Token', () => {
+  it('matches hf_ prefix', () => {
+    expect(matches('Hugging Face API Token', 'hf_abcdefghijklmnopqrstuvwxyz')).toBe(true);
+  });
+});
+
+describe('Replicate API Key', () => {
+  it('matches r8_ prefix', () => {
+    expect(matches('Replicate API Key', 'r8_abcdefghijklmnopqrstuvwxyz')).toBe(true);
+  });
+});
+
+// ── Cloud tokens ──────────────────────────────────────────────────────────────
+
+describe('DigitalOcean Personal Access Token', () => {
+  it('matches dop_v1_ prefix', () => {
+    expect(matches('DigitalOcean Personal Access Token', 'dop_v1_' + 'a'.repeat(64))).toBe(true);
+  });
+  it('does not match too short', () => {
+    expect(matches('DigitalOcean Personal Access Token', 'dop_v1_short')).toBe(false);
+  });
+});
+
+describe('HashiCorp Vault Token (hvs.)', () => {
+  it('matches hvs. prefix', () => {
+    expect(matches('Vault Token', 'hvs.' + 'a'.repeat(20))).toBe(true);
+  });
+});
+
+describe('PlanetScale API Token', () => {
+  it('matches pscale_ prefix with 32 chars', () => {
+    expect(matches('PlanetScale API Token', 'pscale_' + 'a'.repeat(32))).toBe(true);
+  });
+  it('does not match wrong length', () => {
+    expect(matches('PlanetScale API Token', 'pscale_short')).toBe(false);
+  });
+});
+
+describe('Resend API Key', () => {
+  it('matches re_ prefix with 32 chars', () => {
+    expect(matches('Resend API Key', 're_' + 'a'.repeat(32))).toBe(true);
+  });
+});
+
+describe('Linear API Key', () => {
+  it('matches lin_api_ prefix', () => {
+    expect(matches('Linear API Key', 'lin_api_' + 'a'.repeat(32))).toBe(true);
+  });
+});
+
+// ── Payment ───────────────────────────────────────────────────────────────────
+
+describe('Shopify Admin API Access Token', () => {
+  it('matches shpat_ prefix', () => {
+    expect(matches('Shopify Admin API Access Token', 'shpat_' + 'a'.repeat(32))).toBe(true);
+  });
+});
+
+describe('Square Access Token', () => {
+  it('matches sq0atp- prefix', () => {
+    expect(matches('Square Access Token', 'sq0atp-abcdefghijklmnopqrstuv123')).toBe(true);
+  });
+});
+
+describe('Plaid Access Token', () => {
+  it('matches access-production format', () => {
+    expect(
+      matches('Plaid Access Token', 'access-production-' + 'a'.repeat(32)),
+    ).toBe(true);
+  });
+  it('matches access-sandbox format', () => {
+    expect(
+      matches('Plaid Access Token', 'access-sandbox-' + 'a'.repeat(32)),
+    ).toBe(true);
+  });
+});
+
+// ── GCP / Google ──────────────────────────────────────────────────────────────
+
+describe('Google API Key', () => {
+  it('matches AIza prefix', () => {
+    expect(matches('Google API Key', 'AIza' + 'a'.repeat(35))).toBe(true);
+  });
+  it('does not match too short', () => {
+    expect(matches('Google API Key', 'AIzaShort')).toBe(false);
+  });
+});
+
+describe('GCP Service Account JSON', () => {
+  it('matches type: service_account marker', () => {
+    expect(matches('GCP Service Account JSON', '"type": "service_account"')).toBe(true);
+  });
+  it('does not match type: user_account', () => {
+    expect(matches('GCP Service Account JSON', '"type": "user_account"')).toBe(false);
+  });
+});
+
+// ── GitLab / DevOps ───────────────────────────────────────────────────────────
+
+describe('GitLab Personal Access Token', () => {
+  it('matches glpat- prefix', () => {
+    expect(matches('GitLab Personal Access Token', 'glpat-abcdefghijklmnopqrstu')).toBe(true);
+  });
+});
+
+describe('Telegram Bot Token', () => {
+  it('matches digit:AA format', () => {
+    expect(matches('Telegram Bot Token', '123456789:AAabcdefghijklmnopqrstuvwxyz01')).toBe(true);
+  });
+  it('does not match without AA prefix after colon', () => {
+    expect(matches('Telegram Bot Token', '123456789:BBabcdefghijklmnopqrstuvwxyz')).toBe(false);
+  });
+});
+
+// ── Severity checks ───────────────────────────────────────────────────────────
+
+describe('pattern severity', () => {
+  it('Stripe Live Secret Key is critical', () => {
+    expect(findPattern('Stripe Live Secret Key').severity).toBe('critical');
+  });
+  it('JWT Token is warning', () => {
+    expect(findPattern('JWT Token').severity).toBe('warning');
+  });
+  it('Google API Key is warning', () => {
+    expect(findPattern('Google API Key').severity).toBe('warning');
+  });
+  it('Anthropic API Key is critical', () => {
+    expect(findPattern('Anthropic API Key').severity).toBe('critical');
+  });
+});
+
+// ── Pattern count sanity check ────────────────────────────────────────────────
+
+describe('PATTERNS array', () => {
+  it('contains at least 50 patterns', () => {
+    expect(PATTERNS.length).toBeGreaterThanOrEqual(50);
+  });
+  it('every pattern has required fields', () => {
+    for (const p of PATTERNS) {
+      expect(p.name).toBeTruthy();
+      expect(p.pattern).toBeInstanceOf(RegExp);
+      expect(['critical', 'warning', 'info']).toContain(p.severity);
+      expect(p.description).toBeTruthy();
+    }
+  });
+  it('all patterns have global flag', () => {
+    for (const p of PATTERNS) {
+      expect(p.pattern.global).toBe(true);
+    }
+  });
+});

@@ -9,6 +9,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -26,7 +28,9 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.37",
-    "typescript": "^5.4.0"
+    "memfs": "^4.56.11",
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.0"
   },
   "files": [
     "dist",
