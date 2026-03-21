@@ -88,6 +88,15 @@ const SCAN_FINDINGS: Finding[] = [
     charOffset: 14022,
     truncatedValue: 'eyJhbGci•••',
   },
+  {
+    type: 'sourcemap-secret',
+    patternName: 'Twilio Auth Token',
+    severity: 'warning',
+    description: 'Twilio auth token found in source map — may not be in live bundle',
+    filePath: `${CHUNKS_DIR}/main-d9a721cc.js.map`,
+    charOffset: 4418,
+    truncatedValue: 'SKabcdef•••',
+  },
 ];
 
 /** Synthetic suppression rules for the demo. */
