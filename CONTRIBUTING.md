@@ -70,8 +70,6 @@ The entry point for the CLI is `src/cli.ts`. Each sub-command is wired up there 
 - No `process.exit` outside `src/cli.ts`.
 - Secret values must never appear in full in any output, test fixture, or report. Use `truncateValue()` for display.
 
-See [CLAUDE.md](CLAUDE.md) for the full set of rules the project follows.
-
 ---
 
 ## Running tests
@@ -91,7 +89,7 @@ Use `vi.mock` for all filesystem and process I/O. Tests must never touch the rea
 
 ## Validation checklist
 
-Run these four steps in order before opening a pull request. Do not skip any step. Do not open a PR if any step fails.
+Run these four steps, in order, before opening a pull request. Do not skip any step. Do not open a PR if any step fails.
 
 ```bash
 npm run lint
@@ -151,7 +149,7 @@ The project uses:
 - Vitest for testing
 - ESLint + Prettier for linting
 
-Key rules (from CLAUDE.md — follow these exactly):
+Key rules (follow these exactly):
 - All relative imports must use .js extensions, even when importing .ts files
 - No `any` type, no `@ts-ignore`, no non-null assertions without a guard
 - All exported functions need JSDoc: @param, @returns, @throws
@@ -159,7 +157,7 @@ Key rules (from CLAUDE.md — follow these exactly):
 - Secret values must never appear in full in any output, test fixture, or report — use truncateValue()
 - Regex patterns must be reviewed for ReDoS before submission
 
-Before you make any changes, read src/types.ts and CLAUDE.md so you understand the type system and rules.
+Before you make any changes, read src/types.ts so you understand the type system.
 ```
 
 ---
