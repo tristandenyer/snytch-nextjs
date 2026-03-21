@@ -54,8 +54,8 @@ export interface EnvEntry {
 export interface CheckFinding {
   varName: string;        // e.g. NEXT_PUBLIC_STRIPE_KEY
   severity: Severity;
-  reason: 'pattern-match' | 'serverOnly';
-  patternName: string;    // pattern that matched, or 'serverOnly config'
+  reason: 'pattern-match' | 'serverOnly' | 'high-entropy';
+  patternName: string;    // pattern that matched, 'serverOnly config', or 'High Entropy'
   description: string;
   envFile: string;        // which .env file declared it
   line: number;           // 1-based line in that file
