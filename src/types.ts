@@ -17,6 +17,8 @@ export interface Finding {
   filePath: string;
   charOffset: number;
   truncatedValue: string;
+  /** Git provenance for this finding — populated when a git repo is present. */
+  gitContext?: GitContext;
 }
 
 export interface ScanResult {
@@ -75,6 +77,25 @@ export interface CheckOptions {
   failOn: FailOn;
   /** Explicit list of .env file paths to check. When omitted, auto-detect. */
   envFiles?: string[];
+}
+
+// ── Git context types ─────────────────────────────────────────────────────────
+
+export interface GitCommit {
+  hash: string;
+  author: string;
+  email: string;
+  relativeTime: string;
+  message: string;
+}
+
+export interface GitContext {
+  /** Source file most likely responsible for the leaked value. */
+  sourceFile: string | null;
+  /** Full git log for the source file (up to 10 entries). */
+  log: GitCommit[];
+  /** The single most likely introducing commit, or null if log is empty. */
+  likelyCulprit: GitCommit | null;
 }
 
 // ── Diff types ────────────────────────────────────────────────────────────────

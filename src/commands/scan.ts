@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { PATTERNS } from '../patterns.js';
 import { loadConfig, resolveEnvVars } from '../config.js';
+import { resolveGitContext } from '../gitlog.js';
 import { Finding, ScanResult, ScanOptions } from '../types.js';
 
 function recursiveReadFiles(dir: string, extension: string): string[] {
@@ -126,6 +127,22 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
           // File read error; skip silently
         }
       }
+    }
+  }
+
+  // Pass 3: attach git context to each finding (cached per chunk file)
+  const gitContextCache = new Map<string, ReturnType<typeof resolveGitContext>>();
+
+  for (const finding of findings) {
+    if (!gitContextCache.has(finding.filePath)) {
+      gitContextCache.set(
+        finding.filePath,
+        resolveGitContext(finding.filePath, options.projectRoot, options.dir),
+      );
+    }
+    const ctx = gitContextCache.get(finding.filePath);
+    if (ctx !== null && ctx !== undefined) {
+      finding.gitContext = ctx;
     }
   }
 
