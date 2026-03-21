@@ -9,7 +9,8 @@ function parseArgs(): ScanOptions {
   const args = process.argv.slice(2);
 
   let command = '';
-  let dir = cwd() + '/.next';
+  const projectRoot = cwd();
+  let dir = projectRoot + '/.next';
   let json = false;
   let failOn: 'critical' | 'warning' | 'all' = 'critical';
 
@@ -39,7 +40,7 @@ function parseArgs(): ScanOptions {
     process.exit(1);
   }
 
-  return { dir, json, failOn };
+  return { dir, projectRoot, json, failOn };
 }
 
 async function main() {

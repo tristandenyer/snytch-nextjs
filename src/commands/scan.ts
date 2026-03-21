@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { PATTERNS } from '../patterns.js';
+import { loadConfig, resolveEnvVars } from '../config.js';
 import { Finding, ScanResult, ScanOptions } from '../types.js';
 
 function recursiveReadFiles(dir: string, extension: string): string[] {
@@ -65,6 +66,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
           fileMatches.add(matchKey);
 
           const finding: Finding = {
+            type: 'pattern-match',
             patternName: patternDef.name,
             severity: patternDef.severity,
             description: patternDef.description,
@@ -78,6 +80,52 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
       }
     } catch {
       // File read error; skip silently
+    }
+  }
+
+  // Pass 2: value matching against serverOnly vars from snytch.config.js
+  const config = loadConfig(options.projectRoot);
+  if (config?.serverOnly && config.serverOnly.length > 0) {
+    const resolvedVars = resolveEnvVars(options.projectRoot, config.serverOnly);
+
+    for (const envVar of resolvedVars) {
+      const truncatedValue = envVar.value.substring(0, 8) + '•••';
+
+      for (const filePath of allFiles) {
+        try {
+          const fileContent = readFileSync(filePath, 'utf-8');
+          let searchIdx = 0;
+
+          while (true) {
+            const idx = fileContent.indexOf(envVar.value, searchIdx);
+            if (idx === -1) break;
+
+            const matchKey = `value-match|${envVar.name}|${filePath}`;
+            if (!seenMatches.has(filePath)) {
+              seenMatches.set(filePath, new Set());
+            }
+            const fileMatches = seenMatches.get(filePath)!;
+
+            // Only record the first occurrence per var per file
+            if (!fileMatches.has(matchKey)) {
+              fileMatches.add(matchKey);
+              findings.push({
+                type: 'value-match',
+                patternName: `Value match: ${envVar.name}`,
+                severity: 'critical',
+                description: `Literal value of ${envVar.name} (from ${envVar.source}) found in client bundle`,
+                filePath,
+                charOffset: idx,
+                truncatedValue,
+              });
+            }
+
+            searchIdx = idx + envVar.value.length;
+          }
+        } catch {
+          // File read error; skip silently
+        }
+      }
     }
   }
 
