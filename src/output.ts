@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { relative } from 'path';
-import { ScanResult, ScanOptions, Finding } from './types.js';
+import { ScanResult, ScanOptions, Finding, CheckResult, CheckOptions } from './types.js';
 import { generateReport } from './report.js';
 
 const DIVIDER = '─'.repeat(45);
@@ -92,5 +92,47 @@ export function printScanResult(
   } else {
     console.log('  run with --report to generate full RCA report');
   }
+  console.log('');
+}
+
+export function printCheckResult(
+  result: CheckResult,
+  options: CheckOptions,
+): void {
+  if (options.json) {
+    console.log(JSON.stringify({ scannedFiles: result.scannedFiles, findings: result.findings, durationMs: result.durationMs }, null, 2));
+    return;
+  }
+
+  const criticals = result.findings.filter((f) => f.severity === 'critical');
+  const warnings = result.findings.filter((f) => f.severity === 'warning');
+
+  console.log('');
+  console.log(`  checking .env* files (${result.scannedFiles} scanned)...`);
+
+  if (result.findings.length === 0) {
+    console.log('');
+    console.log(chalk.green('  ✓ snytch: clean — no NEXT_PUBLIC_ secrets detected'));
+    console.log('');
+    return;
+  }
+
+  console.log('');
+  console.log(`  ${DIVIDER}`);
+
+  const criticalLabel = criticals.length > 0 ? chalk.red(`${criticals.length} critical`) : chalk.green('0 critical');
+  const warningLabel = warnings.length > 0 ? chalk.yellow(`${warnings.length} warning`) : chalk.green('0 warning');
+  console.log(`  ${criticalLabel}   ${warningLabel}`);
+  console.log(`  ${DIVIDER}`);
+
+  for (const finding of [...criticals, ...warnings]) {
+    const label = finding.severity === 'critical' ? chalk.red('[CRITICAL]') : chalk.yellow('[WARN]');
+    console.log('');
+    console.log(`  ${label} ${finding.varName}`);
+    console.log(`    file:    ${finding.envFile}:${finding.line}`);
+    console.log(`    reason:  ${finding.description}`);
+    console.log(`    value:   ${finding.truncatedValue} (truncated)`);
+  }
+
   console.log('');
 }

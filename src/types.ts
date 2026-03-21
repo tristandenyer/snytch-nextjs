@@ -43,3 +43,33 @@ export interface ResolvedEnvVar {
   value: string;
   source: string; // which file or 'process.env' the value came from
 }
+
+export interface EnvEntry {
+  key: string;
+  value: string;
+  file: string;   // file path passed by the caller
+  line: number;   // 1-based line number where the key starts
+}
+
+export interface CheckFinding {
+  varName: string;        // e.g. NEXT_PUBLIC_STRIPE_KEY
+  severity: Severity;
+  reason: 'pattern-match' | 'serverOnly';
+  patternName: string;    // pattern that matched, or 'serverOnly config'
+  description: string;
+  envFile: string;        // which .env file declared it
+  line: number;           // 1-based line in that file
+  truncatedValue: string;
+}
+
+export interface CheckResult {
+  scannedFiles: number;   // number of .env* files examined
+  findings: CheckFinding[];
+  durationMs: number;
+}
+
+export interface CheckOptions {
+  projectRoot: string;
+  json: boolean;
+  failOn: FailOn;
+}

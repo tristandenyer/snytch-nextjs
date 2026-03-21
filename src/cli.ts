@@ -2,71 +2,71 @@
 
 import { cwd } from 'process';
 import { scan } from './commands/scan.js';
-import { printScanResult } from './output.js';
-import { ScanOptions } from './types.js';
+import { check } from './commands/check.js';
+import { printScanResult, printCheckResult } from './output.js';
+import { ScanOptions, CheckOptions, FailOn } from './types.js';
 
-function parseArgs(): ScanOptions {
+function parseFailOn(args: string[], i: number): FailOn {
+  const val = args[i + 1];
+  if (val === 'critical' || val === 'warning' || val === 'all') return val;
+  return 'critical';
+}
+
+async function main() {
   const args = process.argv.slice(2);
-
-  let command = '';
+  const command = args[0];
   const projectRoot = cwd();
-  let dir = projectRoot + '/.next';
+
+  if (!command || (command !== 'scan' && command !== 'check')) {
+    console.error('Usage:');
+    console.error('  snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all]');
+    console.error('  snytch check [--json] [--fail-on critical|warning|all]');
+    process.exit(1);
+  }
+
   let json = false;
   let report = false;
-  let failOn: 'critical' | 'warning' | 'all' = 'critical';
+  let failOn: FailOn = 'critical';
+  let dir = projectRoot + '/.next';
 
-  for (let i = 0; i < args.length; i++) {
+  for (let i = 1; i < args.length; i++) {
     const arg = args[i];
-
-    if (!command && arg === 'scan') {
-      command = 'scan';
-    } else if (arg === '--dir' && args[i + 1]) {
-      dir = args[i + 1];
-      i++;
-    } else if (arg === '--json') {
+    if (arg === '--json') {
       json = true;
     } else if (arg === '--report') {
       report = true;
     } else if (arg === '--fail-on' && args[i + 1]) {
-      const val = args[i + 1];
-      if (val === 'critical' || val === 'warning' || val === 'all') {
-        failOn = val;
-      }
+      failOn = parseFailOn(args, i);
+      i++;
+    } else if (arg === '--dir' && args[i + 1]) {
+      dir = args[i + 1];
       i++;
     }
   }
 
-  if (!command || command !== 'scan') {
-    console.error(
-      'Usage: snytch scan [--dir ./.next] [--json] [--fail-on critical|warning|all]',
-    );
-    process.exit(1);
-  }
-
-  return { dir, projectRoot, json, report, failOn };
-}
-
-async function main() {
-  const options = parseArgs();
-
   try {
-    const result = await scan(options);
-    printScanResult(result, options);
+    if (command === 'scan') {
+      const options: ScanOptions = { dir, projectRoot, json, report, failOn };
+      const result = await scan(options);
+      printScanResult(result, options);
 
-    // Determine exit code based on failOn level
-    let shouldFail = false;
+      let shouldFail = false;
+      if (failOn === 'critical') shouldFail = result.findings.some((f) => f.severity === 'critical');
+      else if (failOn === 'warning') shouldFail = result.findings.some((f) => f.severity === 'critical' || f.severity === 'warning');
+      else if (failOn === 'all') shouldFail = result.findings.length > 0;
+      process.exit(shouldFail ? 1 : 0);
 
-    if (options.failOn === 'critical') {
-      shouldFail = result.findings.some((f) => f.severity === 'critical');
-    } else if (options.failOn === 'warning') {
-      shouldFail = result.findings.some(
-        (f) => f.severity === 'critical' || f.severity === 'warning',
-      );
-    } else if (options.failOn === 'all') {
-      shouldFail = result.findings.length > 0;
+    } else if (command === 'check') {
+      const options: CheckOptions = { projectRoot, json, failOn };
+      const result = await check(options);
+      printCheckResult(result, options);
+
+      let shouldFail = false;
+      if (failOn === 'critical') shouldFail = result.findings.some((f) => f.severity === 'critical');
+      else if (failOn === 'warning') shouldFail = result.findings.some((f) => f.severity === 'critical' || f.severity === 'warning');
+      else if (failOn === 'all') shouldFail = result.findings.length > 0;
+      process.exit(shouldFail ? 1 : 0);
     }
-
-    process.exit(shouldFail ? 1 : 0);
   } catch (error) {
     if (error instanceof Error) {
       console.error('Error:', error.message);
