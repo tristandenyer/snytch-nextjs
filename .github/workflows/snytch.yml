@@ -1,0 +1,165 @@
+# snytch — Secret & environment exposure scan
+#
+# Runs on every push to main and on pull requests.
+# Copy this file to .github/workflows/snytch.yml in your project.
+#
+# Required secrets (optional — workflow does not fail if unset):
+#   ANTHROPIC_API_KEY  — enables AI root cause analysis in the HTML report
+
+name: snytch security scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write   # needed for the PR comment step
+
+jobs:
+  snytch:
+    name: Scan for leaked secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ────────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Node setup & install ─────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Build ────────────────────────────────────────────────────────────────
+      - name: Build Next.js application
+        run: npm run build
+
+      # ── snytch scan ──────────────────────────────────────────────────────────
+      # Saves machine-readable results to snytch-results.json.
+      # Exits 1 on critical findings, which sets SCAN_FAILED for later steps.
+      - name: Run snytch scan
+        id: scan
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          REPORT_FLAG=""
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            REPORT_FLAG="--report"
+          fi
+          npx @snytch/nextjs scan \
+            --json \
+            --fail-on critical \
+            $REPORT_FLAG \
+            > snytch-results.json \
+            && echo "scan_failed=false" >> "$GITHUB_OUTPUT" \
+            || echo "scan_failed=true"  >> "$GITHUB_OUTPUT"
+
+      # ── snytch diff ──────────────────────────────────────────────────────────
+      # Compares .env.staging and .env.production key schemas.
+      # Only runs when both files exist. Does not fail the workflow on its own.
+      - name: Run snytch diff (staging vs production)
+        id: diff
+        run: |
+          if [ -f .env.staging ] && [ -f .env.production ]; then
+            npx @snytch/nextjs diff \
+              --env .env.staging \
+              --env .env.production \
+              --json \
+              > snytch-diff.json \
+              && echo "diff_failed=false" >> "$GITHUB_OUTPUT" \
+              || echo "diff_failed=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "Skipping diff: .env.staging or .env.production not found"
+            echo "diff_failed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── PR comment on failure ────────────────────────────────────────────────
+      # Posts a comment summarising critical findings when the scan fails on a PR.
+      - name: Post PR comment on failure
+        if: |
+          github.event_name == 'pull_request' &&
+          steps.scan.outputs.scan_failed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let results;
+            try {
+              results = JSON.parse(fs.readFileSync('snytch-results.json', 'utf8'));
+            } catch {
+              console.log('Could not parse snytch-results.json');
+              return;
+            }
+
+            const findings = results.findings ?? [];
+            const criticals = findings.filter(f => f.severity === 'critical');
+
+            if (criticals.length === 0) return;
+
+            const sha     = context.sha.slice(0, 7);
+            const author  = context.payload.pull_request?.head?.repo?.owner?.login
+                            ?? context.actor;
+
+            const rows = criticals.slice(0, 10).map(f => {
+              const file = f.filePath.split('/').pop() ?? f.filePath;
+              return `| \`${f.patternName}\` | \`${file}\` | \`${f.truncatedValue}\` |`;
+            }).join('\n');
+
+            const more = criticals.length > 10
+              ? `\n_…and ${criticals.length - 10} more. Run \`snytch scan --report\` locally for the full list._`
+              : '';
+
+            const body = [
+              '## 🔴 snytch found critical secret findings',
+              '',
+              `**Commit:** \`${sha}\` — **Author:** @${author}`,
+              '',
+              '| Pattern | File | Truncated value |',
+              '|---------|------|-----------------|',
+              rows,
+              more,
+              '',
+              '---',
+              '**To investigate locally:**',
+              '```bash',
+              'npx @snytch/nextjs scan --report --ai-provider anthropic',
+              '```',
+              'This generates `snytch-report.html` with full root cause analysis for each finding.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      # ── Upload artifacts ─────────────────────────────────────────────────────
+      # Always upload results so they are accessible from the Actions summary,
+      # even when the scan step fails.
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snytch-results
+          path: |
+            snytch-results.json
+            snytch-diff.json
+            snytch-report.html
+          if-no-files-found: ignore
+          retention-days: 30
+
+      # ── Fail the job if scan found critical issues ───────────────────────────
+      - name: Fail on critical findings
+        if: steps.scan.outputs.scan_failed == 'true'
+        run: |
+          echo "snytch detected critical secret findings. See the PR comment and uploaded artifact for details."
+          exit 1
