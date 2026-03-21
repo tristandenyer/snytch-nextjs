@@ -4,6 +4,16 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [0.5.0] - 2026-03-21
+
+### Added
+
+- **Next.js auth stack patterns**: Clerk secret/publishable keys, Supabase service role key assignment, Convex deploy key. These are the most commonly leaked credentials in Next.js client bundles.
+- **Serverless database patterns**: Neon (`.neon.tech` connection strings), Turso (`libsql://` URLs and auth tokens), Upstash (Redis and Kafka REST tokens).
+- Pattern count increased from 182 to 192.
+
+---
+
 ## [0.4.0] — 2026-03-21
 
 ### Security

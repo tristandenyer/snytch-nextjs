@@ -379,6 +379,168 @@ describe('Telegram Bot Token', () => {
   });
 });
 
+// ── Clerk ────────────────────────────────────────────────────────────────────
+
+describe('Clerk Secret Key (Live)', () => {
+  it('matches a valid live secret key', () => {
+    expect(matches('Clerk Secret Key (Live)', 'sk_live_' + 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0')).toBe(true);
+  });
+  it('matches with surrounding context', () => {
+    expect(matches('Clerk Secret Key (Live)', 'CLERK_SECRET_KEY=sk_live_' + 'abcdefghijklmnopqrstuvwxyz01234567890ABC')).toBe(true);
+  });
+  it('does not match test prefix', () => {
+    expect(matches('Clerk Secret Key (Live)', 'sk_test_' + 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Clerk Secret Key (Live)', 'sk_live_tooshort')).toBe(false);
+  });
+});
+
+describe('Clerk Secret Key (Test)', () => {
+  it('matches a valid test secret key', () => {
+    expect(matches('Clerk Secret Key (Test)', 'sk_test_' + 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0')).toBe(true);
+  });
+  it('matches longer key', () => {
+    expect(matches('Clerk Secret Key (Test)', 'sk_test_' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefgh')).toBe(true);
+  });
+  it('does not match live prefix', () => {
+    expect(matches('Clerk Secret Key (Test)', 'sk_live_' + 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Clerk Secret Key (Test)', 'sk_test_short')).toBe(false);
+  });
+});
+
+describe('Clerk Publishable Key', () => {
+  it('matches live publishable key', () => {
+    expect(matches('Clerk Publishable Key', 'pk_live_' + 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0')).toBe(true);
+  });
+  it('matches test publishable key', () => {
+    expect(matches('Clerk Publishable Key', 'pk_test_' + 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0')).toBe(true);
+  });
+  it('does not match sk_ prefix', () => {
+    expect(matches('Clerk Publishable Key', 'sk_live_' + 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Clerk Publishable Key', 'pk_live_short')).toBe(false);
+  });
+});
+
+// ── Supabase (expanded) ─────────────────────────────────────────────────────
+
+describe('Supabase Service Role Key Assignment', () => {
+  it('matches env var assignment', () => {
+    expect(matches('Supabase Service Role Key Assignment', 'SUPABASE_SERVICE_ROLE_KEY=' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Supabase Service Role Key Assignment', 'supabase_service_role_key="' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX' + '"')).toBe(true);
+  });
+  it('does not match without key name', () => {
+    expect(matches('Supabase Service Role Key Assignment', 'SERVICE_KEY=' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Supabase Service Role Key Assignment', 'SUPABASE_SERVICE_ROLE_KEY=short')).toBe(false);
+  });
+});
+
+// ── Convex ───────────────────────────────────────────────────────────────────
+
+describe('Convex Deploy Key', () => {
+  it('matches env var assignment', () => {
+    expect(matches('Convex Deploy Key', 'CONVEX_DEPLOY_KEY=' + 'prod_abc123def456ghi789jk')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Convex Deploy Key', 'CONVEX_DEPLOY_KEY="' + 'prod_abc123def456ghi789jk' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Convex Deploy Key', 'DEPLOY_KEY=' + 'prod_abc123def456ghi789jk')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Convex Deploy Key', 'CONVEX_DEPLOY_KEY=short')).toBe(false);
+  });
+});
+
+// ── Neon ─────────────────────────────────────────────────────────────────────
+
+describe('Neon Database Connection String', () => {
+  it('matches postgres URL with neon.tech host', () => {
+    expect(matches('Neon Database Connection String', 'postgres://user:' + 'pa55word@ep-cool-name-123456.us-east-2.aws.neon.tech/neondb')).toBe(true);
+  });
+  it('matches postgresql protocol variant', () => {
+    expect(matches('Neon Database Connection String', 'postgresql://neondb_owner:' + 'abc123@ep-example.neon.tech/neondb?sslmode=require')).toBe(true);
+  });
+  it('does not match non-neon postgres URL', () => {
+    expect(matches('Neon Database Connection String', 'postgres://user:' + 'pass@localhost:5432/mydb')).toBe(false);
+  });
+  it('does not match plain neon.tech URL', () => {
+    expect(matches('Neon Database Connection String', 'https://neon.tech/docs')).toBe(false);
+  });
+});
+
+// ── Turso ────────────────────────────────────────────────────────────────────
+
+describe('Turso Database URL', () => {
+  it('matches libsql URL', () => {
+    expect(matches('Turso Database URL', 'libsql://my-db-myorg.turso.io')).toBe(true);
+  });
+  it('matches libsql URL with path', () => {
+    expect(matches('Turso Database URL', 'libsql://localhost:8080')).toBe(true);
+  });
+  it('does not match http URL', () => {
+    expect(matches('Turso Database URL', 'http://my-db.turso.io')).toBe(false);
+  });
+  it('does not match bare libsql without host', () => {
+    expect(matches('Turso Database URL', 'libsql://')).toBe(false);
+  });
+});
+
+describe('Turso Auth Token', () => {
+  it('matches env var assignment', () => {
+    expect(matches('Turso Auth Token', 'TURSO_AUTH_TOKEN=' + 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.abc123def456')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Turso Auth Token', 'TURSO_AUTH_TOKEN="' + 'abcdef1234567890abcdef' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Turso Auth Token', 'AUTH_TOKEN=' + 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.abc123def456')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Turso Auth Token', 'TURSO_AUTH_TOKEN=short')).toBe(false);
+  });
+});
+
+// ── Upstash ──────────────────────────────────────────────────────────────────
+
+describe('Upstash Redis REST Token', () => {
+  it('matches env var assignment', () => {
+    expect(matches('Upstash Redis REST Token', 'UPSTASH_REDIS_REST_TOKEN=' + 'AX8zASQgODRhNzVjMTMtY2U2')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Upstash Redis REST Token', 'UPSTASH_REDIS_REST_TOKEN="' + 'AX8zASQgODRhNzVjMTMtY2U2' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Upstash Redis REST Token', 'REDIS_TOKEN=' + 'AX8zASQgODRhNzVjMTMtY2U2')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Upstash Redis REST Token', 'UPSTASH_REDIS_REST_TOKEN=abc')).toBe(false);
+  });
+});
+
+describe('Upstash Kafka REST Token', () => {
+  it('matches env var assignment', () => {
+    expect(matches('Upstash Kafka REST Token', 'UPSTASH_KAFKA_REST_TOKEN=' + 'AX8zASQgODRhNzVjMTMtY2U2')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Upstash Kafka REST Token', 'UPSTASH_KAFKA_REST_TOKEN="' + 'kafkatoken1234567890abc' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Upstash Kafka REST Token', 'KAFKA_TOKEN=' + 'AX8zASQgODRhNzVjMTMtY2U2')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Upstash Kafka REST Token', 'UPSTASH_KAFKA_REST_TOKEN=abc')).toBe(false);
+  });
+});
+
 // ── Severity checks ───────────────────────────────────────────────────────────
 
 describe('pattern severity', () => {

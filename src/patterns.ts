@@ -1216,5 +1216,77 @@ export const PATTERNS: SecretPattern[] = [
     severity: 'warning',
     description: 'Solr cluster endpoint URL',
   },
+
+  // Clerk (Category 70)
+  {
+    name: 'Clerk Secret Key (Live)',
+    pattern: /sk_live_[a-zA-Z0-9]{40,}/g,
+    severity: 'critical',
+    description: 'Clerk live secret key',
+  },
+  {
+    name: 'Clerk Secret Key (Test)',
+    pattern: /sk_test_[a-zA-Z0-9]{40,}/g,
+    severity: 'warning',
+    description: 'Clerk test secret key',
+  },
+  {
+    name: 'Clerk Publishable Key',
+    pattern: /pk_(?:live|test)_[a-zA-Z0-9]{40,}/g,
+    severity: 'info',
+    description: 'Clerk publishable key (public, but may indicate server key nearby)',
+  },
+
+  // Supabase — expanded (Category 71)
+  {
+    name: 'Supabase Service Role Key Assignment',
+    pattern: new RegExp("supabase[_-]?service[_-]?role[_-]?key['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{30,})", "gi"),
+    severity: 'critical',
+    description: 'Supabase service role key in env/config assignment',
+  },
+
+  // Convex (Category 72)
+  {
+    name: 'Convex Deploy Key',
+    pattern: new RegExp("CONVEX_DEPLOY_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9_-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Convex deployment key',
+  },
+
+  // Neon (Category 73)
+  {
+    name: 'Neon Database Connection String',
+    pattern: /postgres(?:ql)?:\/\/[^\s)}"']*\.neon\.tech[^\s)}"']*/g,
+    severity: 'critical',
+    description: 'Neon serverless Postgres connection string',
+  },
+
+  // Turso (Category 74)
+  {
+    name: 'Turso Database URL',
+    pattern: /libsql:\/\/[a-zA-Z0-9._-]+[^\s)}"']*/g,
+    severity: 'warning',
+    description: 'Turso/libSQL database URL',
+  },
+  {
+    name: 'Turso Auth Token',
+    pattern: new RegExp("TURSO_AUTH_TOKEN['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Turso database auth token',
+  },
+
+  // Upstash (Category 75)
+  {
+    name: 'Upstash Redis REST Token',
+    pattern: new RegExp("UPSTASH_REDIS_REST_TOKEN['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Upstash Redis REST API token',
+  },
+  {
+    name: 'Upstash Kafka REST Token',
+    pattern: new RegExp("UPSTASH_KAFKA_REST_TOKEN['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Upstash Kafka REST API token',
+  },
 ];
 

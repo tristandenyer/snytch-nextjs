@@ -164,17 +164,18 @@ You will be prompted to delete the generated report files when the demo complete
   - `next.config.js` `env` block — values injected into all bundles at build time
   - `.next/server/middleware.js` — compiled edge middleware
   - `.next/trace` module dependency graph (opt-in via `--graph`) — structural import chain analysis
-- Detects 170+ secret patterns including:
+- Detects 190+ secret patterns including:
   - AWS access keys, session tokens, and resource ARNs
   - Stripe, Square, PayPal, Braintree, and Coinbase keys
-  - Database connection strings (PostgreSQL, MySQL, MongoDB, Redis, Elasticsearch, and more)
+  - Database connection strings (PostgreSQL, MySQL, MongoDB, Redis, Elasticsearch, Neon, Turso, and more)
   - GitHub, GitLab, and Bitbucket tokens (classic and fine-grained)
   - Slack, Discord, Twilio, SendGrid, Mailgun, and Postmark tokens
   - Private keys (RSA, EC, DSA, OpenSSH, PGP)
   - JWT tokens, OAuth tokens, and high-entropy bearer tokens
   - Cloud provider keys (Google Cloud, Azure, Firebase, Cloudflare, DigitalOcean, Vercel, Heroku)
   - AI and ML API keys (OpenAI, Anthropic, Cohere, Hugging Face, Replicate, Pinecone)
-  - Auth providers (Auth0, Okta)
+  - Auth providers (Clerk, Supabase, Auth0, Okta)
+  - Serverless data platforms (Upstash, Convex)
   - Monitoring and observability (Datadog, New Relic, Sentry, Splunk, Grafana)
   - High-entropy string heuristics for unknown secret formats
 - Config-level suppression rules with required justification and optional expiry dates

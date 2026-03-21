@@ -89,6 +89,15 @@ const SCAN_FINDINGS: Finding[] = [
     truncatedValue: 'eyJhbGci•••',
   },
   {
+    type: 'pattern-match',
+    patternName: 'Clerk Secret Key (Live)',
+    severity: 'critical',
+    description: 'Clerk live secret key found in client bundle',
+    filePath: `${CHUNKS_DIR}/pages/_app-4f8e2a1b.js`,
+    charOffset: 5710,
+    truncatedValue: 'sk_live_•••',
+  },
+  {
     type: 'sourcemap-secret',
     patternName: 'Twilio Auth Token',
     severity: 'warning',
