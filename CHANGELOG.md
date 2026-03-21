@@ -4,6 +4,14 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [0.1.3] — 2026-03-21
+
+### Changed
+
+- Improved description for **Environment Variable with Secret Value** warning — now explicitly notes it may be a false positive from URL parsers or framework internals, so users can self-triage without needing external help.
+
+---
+
 ## [0.1.2] — 2026-03-21
 
 ### Fixed
