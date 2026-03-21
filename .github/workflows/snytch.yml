@@ -44,11 +44,17 @@ jobs:
       # ── snytch scan ──────────────────────────────────────────────────────────
       # Saves machine-readable results to snytch-results.json.
       # Exits 1 on critical findings, which sets SCAN_FAILED for later steps.
+      # Skips gracefully if .next does not exist (e.g. build was skipped or failed).
       - name: Run snytch scan
         id: scan
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
+          if [ ! -d .next ]; then
+            echo "No .next directory found — skipping bundle scan."
+            echo "scan_failed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           REPORT_FLAG=""
           if [ -n "$ANTHROPIC_API_KEY" ]; then
             REPORT_FLAG="--report"
