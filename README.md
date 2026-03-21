@@ -10,9 +10,9 @@ Bundle scanning, secret detection, and environment exposure analysis for Next.js
 
 ## Why we all need this
 
-With Next.js, an environment variable without the `NEXT_PUBLIC_` prefix can still end up in a client bundle if it's imported by a shared module, a utility function, or a component that renders on both server and client. By the time it's in production, it's in every visitor's browser, your build artifacts, your CDN cache, and potentially your git history.
+Next.js makes it easy to accidentally expose secrets to the browser in two distinct ways. First, any variable prefixed with `NEXT_PUBLIC_` is embedded into the client bundle at build time and sent to every visitor — even if the value is a secret key that was never meant to leave the server. Second, a server-only variable without the prefix can still end up in a client bundle if it's imported by a shared module, a utility function, or a component that renders on both server and client. By the time either problem reaches production, the value is in every visitor's browser, your build artifacts, your CDN cache, and potentially your git history.
 
-The scale of this problem is larger than most teams realize. According to [GitGuardian's 2026 State of Secrets Sprawl Report](https://www.gitguardian.com/state-of-secrets-sprawl-report-2026), codebases leaked 28.6 million secrets in public GitHub repositories in 2025 alone, a 34% year-over-year increase. More concerning: 64% of secrets from 2022 are still exploitable today.
+The scale of this problem is larger than most teams realize. According to [GitGuardian's 2026 State of Secrets Sprawl Report](https://www.gitguardian.com/state-of-secrets-sprawl-report-2026), 28.6 million secrets were added to public GitHub commits in 2025 alone — a 34% year-over-year increase. 64% of valid secrets leaked in 2022 had still not been revoked by 2026.
 
 `@snytch/nextjs` scans your compiled bundle, checks your `.env` files, and compares your environments to catch these issues before they reach production.
 
@@ -51,8 +51,9 @@ snytch scan --dir ./apps/web/.next
 | `--dir`         | `./.next`   | Path to the `.next` directory                                                                                 |
 | `--json`        | off         | Output results as JSON                                                                                        |
 | `--report`      | off         | Generate an HTML report at `./snytch-reports/snytch-report.html`                                              |
+| `--graph`       | off         | Scan the module dependency graph for server-only modules reachable from client entry points. Requires a production build with `.next/trace`. |
 | `--fail-on`     | `critical`  | Exit code threshold: `critical`, `warning`, or `all`                                                          |
-| `--ai-provider` | `anthropic` | AI RCA provider: `anthropic` (requires `ANTHROPIC_API_KEY`) or `openai` (requires `OPENAI_API_KEY`) or `none` |
+| `--ai-provider` | `anthropic` | AI RCA provider: `anthropic` (requires `ANTHROPIC_API_KEY`) or `openai` (requires `OPENAI_API_KEY`) or `none`. RCA is skipped when no key is present. |
 
 ![Scan report showing detected secrets, severity levels, file paths, and git provenance](https://raw.githubusercontent.com/tristandenyer/snytch-nextjs/main/docs/screenshots/snytch-report-findings.png)
 
@@ -130,6 +131,7 @@ Three report files are generated in your current directory:
 | `snytch-reports/snytch-check-report.html` | `NEXT_PUBLIC_` exposure findings                                  |
 | `snytch-reports/snytch-diff-report.html`  | Environment variable drift across `.env` files                    |
 
+> [!TIP]
 > Add this to your `.gitignore` to avoid committing the reports directory:
 >
 > ```
@@ -154,11 +156,13 @@ You will be prompted to delete the generated report files when the demo complete
 
 ## Features
 
-- Scans four surfaces per build:
+- Scans six surfaces per build:
   - `.next/static/chunks` — client-side JavaScript and CSS bundles
+  - `.next/static/chunks/*.js.map` — source maps containing pre-minification source code
   - `.next/server/pages` — `__NEXT_DATA__` blocks embedded in HTML responses
   - `next.config.js` `env` block — values injected into all bundles at build time
   - `.next/server/middleware.js` — compiled edge middleware
+  - `.next/trace` module dependency graph (opt-in via `--graph`) — structural import chain analysis
 - Detects 170+ secret patterns including:
   - AWS access keys, session tokens, and resource ARNs
   - Stripe, Square, PayPal, Braintree, and Coinbase keys
@@ -359,7 +363,7 @@ Each entry in the `suppress` array supports the following fields:
 | --------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `reason`  | yes      | Why this finding is being suppressed. Shown in the report and terminal output.                                                                      |
 | `pattern` | no       | Substring match against the finding's pattern name. Omit to match all patterns.                                                                     |
-| `surface` | no       | Limit to a specific scan surface: `pattern-match`, `next-data`, `config-env`, `middleware-secret`.                                                  |
+| `surface` | no       | Limit to a specific scan surface: `pattern-match`, `next-data`, `config-env`, `middleware-secret`, `sourcemap-secret`.                              |
 | `addedBy` | no       | The person who added this rule — a name, username, or email. Shown in the report so others know who to ask about it.                                |
 | `until`   | no       | ISO-8601 expiry date (`"YYYY-MM-DD"`). The rule stops suppressing findings on this date and appears as a warning in the report and terminal output. |
 
@@ -370,8 +374,6 @@ Rules with an expired `until` date are never silently dropped — they surface a
 ## CI/CD integration
 
 Running snytch in CI catches secrets before they reach production. The scan command exits with code 1 when findings at or above the specified severity are found, so it works as a pipeline gate without any extra configuration.
-
-The bundle must be built before scanning, so add the scan step after your build step.
 
 ```yaml
 - name: Build
@@ -391,7 +393,15 @@ To also check environment drift across your `.env` files, add:
   run: npx @snytch/nextjs diff --env .env.staging --env .env.production
 ```
 
-> The `diff` step requires your `.env` files to be present in the CI environment. If they are not checked into the repo, you will need to write them from secrets before this step runs.
+> [!WARNING]
+> The `diff` step requires your `.env` files to be present in the CI environment. Never commit `.env` files to the repo. Write them from CI secrets before this step runs:
+>
+> ```yaml
+> - name: Write env files from secrets
+>   run: |
+>     echo "${{ secrets.ENV_STAGING }}" > .env.staging
+>     echo "${{ secrets.ENV_PRODUCTION }}" > .env.production
+> ```
 
 ---
 

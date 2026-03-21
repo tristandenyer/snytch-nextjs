@@ -24,7 +24,7 @@ async function main() {
 
   if (!command || (command !== 'scan' && command !== 'check' && command !== 'diff' && command !== 'mcp' && command !== 'demo')) {
     console.error('Usage:');
-    console.error('  snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none]');
+    console.error('  snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none] [--graph]');
     console.error('  snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|all]');
     console.error('  snytch diff --env .env.staging --env .env.production [--json] [--report] [--strict]');
     console.error('  snytch demo');
@@ -39,6 +39,7 @@ async function main() {
   let json = false;
   let report = false;
   let strict = false;
+  let graph = false;
   let failOn: FailOn = 'critical';
   let aiProvider: AiProvider = 'anthropic';
   let dir = projectRoot + '/.next';
@@ -52,6 +53,8 @@ async function main() {
       report = true;
     } else if (arg === '--strict') {
       strict = true;
+    } else if (arg === '--graph') {
+      graph = true;
     } else if (arg === '--fail-on' && args[i + 1]) {
       failOn = parseFailOn(args, i);
       i++;
@@ -74,7 +77,7 @@ async function main() {
     if (command === 'scan') {
       const config = loadConfig(projectRoot);
       const rcaMaxTokens = config?.rca?.maxTokens;
-      const options: ScanOptions = { dir, projectRoot, json, report, failOn, aiProvider, rcaMaxTokens };
+      const options: ScanOptions = { dir, projectRoot, json, report, failOn, aiProvider, rcaMaxTokens, graph };
       const result = await scan(options);
       printScanResult(result, options);
 

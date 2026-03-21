@@ -4,6 +4,18 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [0.4.0] — 2026-03-21
+
+### Added
+
+- **Module graph analysis** (`src/graph.ts`, `src/graphscan.ts`): new `--graph` flag on `snytch scan` parses the Next.js build trace (`.next/trace`) to build a directed module dependency graph and flags any server-only module (listed in `snytch.config.js` `serverOnly`) reachable from a client entry point. Findings carry `type: 'graph-leak'`, `severity: 'warning'`, and a full import chain string in the description (e.g., `app/page.tsx → lib/db.ts → lib/secrets.ts`). This is a structural check — it warns about the import path, not a leaked value.
+- `--graph` flag is opt-in. When not passed, `scanModuleGraph` is never called and no `.next/trace` read is attempted.
+- Surface label `[import chain]` in terminal output; `· import chain` label and dedicated `chain:` row (instead of `col`/`value`) in HTML report findings cards.
+- `graph-leak` added to `FindingType` union in `src/types.ts`; `graph?: boolean` added to `ScanOptions`.
+- Synthetic `graph-leak` finding added to `snytch demo` output to showcase the new surface.
+
+---
+
 ## [0.3.0] — 2026-03-21
 
 ### Added

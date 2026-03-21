@@ -25,6 +25,8 @@ function findingSurfaceLabel(finding: Finding): string {
       return chalk.dim('[edge middleware]');
     case 'sourcemap-secret':
       return chalk.dim('[source map]');
+    case 'graph-leak':
+      return chalk.dim('[import chain]');
     case 'value-match':
     case 'pattern-match':
     default:
@@ -42,9 +44,14 @@ function printFinding(finding: Finding, projectRoot: string): void {
 
   console.log('');
   console.log(`  ${severityLabel} ${surface} ${finding.patternName}`);
-  console.log(`    file:  ${relPath(finding.filePath, projectRoot)}`);
-  console.log(`    col:   ${finding.charOffset}`);
-  console.log(`    value: ${finding.truncatedValue} (truncated)`);
+
+  if (finding.type === 'graph-leak') {
+    console.log(`    chain: ${finding.description}`);
+  } else {
+    console.log(`    file:  ${relPath(finding.filePath, projectRoot)}`);
+    console.log(`    col:   ${finding.charOffset}`);
+    console.log(`    value: ${finding.truncatedValue} (truncated)`);
+  }
 }
 
 /**

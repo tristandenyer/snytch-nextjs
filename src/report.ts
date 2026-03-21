@@ -45,6 +45,7 @@ function renderFindingCard(finding: Finding, projectRoot: string): string {
     'config-env': 'next.config env',
     'middleware-secret': 'edge middleware',
     'sourcemap-secret': 'source map',
+    'graph-leak': 'import chain',
     'value-match': 'value match',
     'pattern-match': '',
   };
@@ -58,10 +59,12 @@ function renderFindingCard(finding: Finding, projectRoot: string): string {
         <span class="pattern-name">${escapeHtml(finding.patternName)}${typeLabel}</span>
       </div>
       <div class="card-body">
-        <div class="field"><span class="label">file</span><span class="value mono">${escapeHtml(relPath(finding.filePath, projectRoot))}</span></div>
+        ${finding.type === 'graph-leak'
+          ? `<div class="field"><span class="label">chain</span><span class="value mono">${escapeHtml(finding.description)}</span></div>`
+          : `<div class="field"><span class="label">file</span><span class="value mono">${escapeHtml(relPath(finding.filePath, projectRoot))}</span></div>
         <div class="field"><span class="label">col</span><span class="value mono">${finding.charOffset}</span></div>
         <div class="field"><span class="label">value</span><span class="value mono redacted">${escapeHtml(finding.truncatedValue)} <span class="truncated-note">(truncated)</span></span></div>
-        <div class="field"><span class="label">desc</span><span class="value">${escapeHtml(finding.description)}</span></div>
+        <div class="field"><span class="label">desc</span><span class="value">${escapeHtml(finding.description)}</span></div>`}
       </div>
     </div>`;
 }
@@ -111,6 +114,7 @@ function renderFindingsTab(
     { types: ['config-env'],                   label: 'next.config env' },
     { types: ['middleware-secret'],             label: 'edge middleware' },
     { types: ['sourcemap-secret'],             label: 'source map' },
+    { types: ['graph-leak'],                   label: 'import chain' },
   ];
 
   const allFindings = [...criticals, ...warnings];
@@ -215,6 +219,7 @@ function renderSuppressCard(sf: SuppressedFinding, projectRoot: string, today: s
     'config-env': 'next.config env',
     'middleware-secret': 'edge middleware',
     'sourcemap-secret': 'source map',
+    'graph-leak': 'import chain',
     'value-match': 'value match',
     'pattern-match': 'client bundle',
   };

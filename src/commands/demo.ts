@@ -97,6 +97,15 @@ const SCAN_FINDINGS: Finding[] = [
     charOffset: 4418,
     truncatedValue: 'SKabcdef•••',
   },
+  {
+    type: 'graph-leak',
+    patternName: 'Import chain: DATABASE_URL',
+    severity: 'warning',
+    description: 'app/dashboard/page.tsx → lib/db.ts → lib/DATABASE_URL.ts',
+    filePath: '/project/lib/DATABASE_URL.ts',
+    charOffset: 0,
+    truncatedValue: '(no value)',
+  },
 ];
 
 /** Synthetic suppression rules for the demo. */

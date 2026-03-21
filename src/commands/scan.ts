@@ -9,6 +9,7 @@ import { scanNextConfig } from '../configscan.js';
 import { scanMiddleware } from '../middlewarescan.js';
 import { scanSourceMaps, deduplicateSourceMapFindings } from '../sourcemapscan.js';
 import { applySuppressions } from '../suppress.js';
+import { scanModuleGraph } from '../graphscan.js';
 import { Finding, ScanResult, ScanOptions } from '../types.js';
 
 function recursiveReadFiles(dir: string, extension: string): string[] {
@@ -146,6 +147,12 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
   // Pass 3c: scan edge middleware
   const middlewareFindings = scanMiddleware(options.dir, options.projectRoot, config ?? {});
   findings.push(...middlewareFindings);
+
+  // Pass 3e: module graph analysis — only when --graph flag is set
+  if (options.graph) {
+    const graphFindings = scanModuleGraph(options.dir, options.projectRoot, config ?? {});
+    findings.push(...graphFindings);
+  }
 
   // Pass 3d: scan source maps — deduplicate against live bundle findings
   const rawSourceMapFindings = scanSourceMaps(options.dir, options.projectRoot, config ?? {});

@@ -1,5 +1,5 @@
 export type Severity = 'critical' | 'warning' | 'info';
-export type FindingType = 'pattern-match' | 'value-match' | 'next-data' | 'config-env' | 'middleware-secret' | 'sourcemap-secret';
+export type FindingType = 'pattern-match' | 'value-match' | 'next-data' | 'config-env' | 'middleware-secret' | 'sourcemap-secret' | 'graph-leak';
 export type FailOn = 'critical' | 'warning' | 'all';
 
 export interface SecretPattern {
@@ -70,6 +70,11 @@ export interface ScanOptions {
   aiProvider?: AiProvider;
   /** Maximum tokens for AI RCA responses. Defaults to 2048. */
   rcaMaxTokens?: number;
+  /**
+   * When true, run module graph analysis to detect server-only modules
+   * reachable from client entry points. Requires `.next/trace`.
+   */
+  graph?: boolean;
 }
 
 export interface RcaConfig {
