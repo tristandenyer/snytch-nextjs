@@ -1432,5 +1432,67 @@ export const PATTERNS: SecretPattern[] = [
     severity: 'critical',
     description: 'Recurly API key in env/config assignment',
   },
+
+  // Pusher (Category 88)
+  {
+    name: 'Pusher App Secret',
+    pattern: new RegExp("PUSHER_(?:APP_)?SECRET['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Pusher app secret in env/config assignment',
+  },
+
+  // Ably (Category 89)
+  {
+    name: 'Ably API Key',
+    pattern: /[a-zA-Z0-9_-]{6}\.[a-zA-Z0-9_-]{6}:[a-zA-Z0-9_+/=\-]{20,}/g,
+    severity: 'critical',
+    description: 'Ably API key in app-id.key-id:key-secret format',
+  },
+  {
+    name: 'Ably API Key Assignment',
+    pattern: new RegExp("ABLY_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._:/-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Ably API key in env/config assignment',
+  },
+
+  // OneSignal (Category 90)
+  {
+    name: 'OneSignal REST API Key',
+    pattern: new RegExp("ONESIGNAL_(?:REST_)?API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'OneSignal REST API key in env/config assignment',
+  },
+
+  // Customer.io (Category 91)
+  {
+    name: 'Customer.io API Key',
+    pattern: new RegExp("(?:CUSTOMERIO|CIO)_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Customer.io API key in env/config assignment',
+  },
+
+  // Svix (Category 92)
+  {
+    name: 'Svix API Key',
+    pattern: new RegExp("SVIX_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Svix webhook API key in env/config assignment',
+  },
+
+  // Knock (Category 93)
+  {
+    name: 'Knock API Key',
+    pattern: new RegExp("KNOCK_(?:SECRET_)?API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Knock notification API key in env/config assignment',
+  },
+
+  // Novu (Category 94)
+  {
+    name: 'Novu API Key',
+    pattern: new RegExp("NOVU_(?:API|SECRET)_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Novu notification API/secret key in env/config assignment',
+  },
 ];
 

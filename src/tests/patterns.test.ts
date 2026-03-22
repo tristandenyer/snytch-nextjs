@@ -830,6 +830,128 @@ describe('Recurly API Key', () => {
   });
 });
 
+// ── Communication & Notifications (Phase 4) ──────────────────────────────────
+
+describe('Pusher App Secret', () => {
+  it('matches PUSHER_APP_SECRET assignment', () => {
+    expect(matches('Pusher App Secret', 'PUSHER_APP_SECRET=' + 'a1b2c3d4e5f6g7h8i9j0k1l2')).toBe(true);
+  });
+  it('matches PUSHER_SECRET assignment', () => {
+    expect(matches('Pusher App Secret', 'PUSHER_SECRET="' + 'myPusherSecretValue12345' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Pusher App Secret', 'APP_SECRET=' + 'a1b2c3d4e5f6g7h8i9j0k1l2')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Pusher App Secret', 'PUSHER_APP_SECRET=abc')).toBe(false);
+  });
+});
+
+describe('Ably API Key', () => {
+  it('matches app-id.key-id:key-secret format', () => {
+    expect(matches('Ably API Key', 'xVLyHw' + '.BXLJkQ:HCStquklRbL-g9FRfQLxR_MNqj4')).toBe(true);
+  });
+  it('matches another valid format', () => {
+    expect(matches('Ably API Key', 'a1b2c3' + '.d4e5f6:xyzABCDEFGHIJKLMNOPQRST')).toBe(true);
+  });
+  it('does not match without colon separator', () => {
+    expect(matches('Ably API Key', 'xVLyHw.BXLJkQ-HCStquklRbLg9FRfQLxR')).toBe(false);
+  });
+  it('does not match short secret portion', () => {
+    expect(matches('Ably API Key', 'xVLyHw.BXLJkQ:short')).toBe(false);
+  });
+});
+
+describe('Ably API Key Assignment', () => {
+  it('matches ABLY_API_KEY assignment', () => {
+    expect(matches('Ably API Key Assignment', 'ABLY_API_KEY=' + 'xVLyHw.BXLJkQ:HCStquklRbL')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Ably API Key Assignment', 'ABLY_API_KEY="' + 'a1b2c3.d4e5f6:xyzABCDEFGH' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Ably API Key Assignment', 'API_KEY=' + 'xVLyHw.BXLJkQ:HCStquklRbL')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Ably API Key Assignment', 'ABLY_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('OneSignal REST API Key', () => {
+  it('matches ONESIGNAL_REST_API_KEY assignment', () => {
+    expect(matches('OneSignal REST API Key', 'ONESIGNAL_REST_API_KEY=' + 'NjE4ZDI2MWEtOTkzYi00ZT')).toBe(true);
+  });
+  it('matches ONESIGNAL_API_KEY assignment', () => {
+    expect(matches('OneSignal REST API Key', 'ONESIGNAL_API_KEY="' + 'onesignal_key_value_12345' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('OneSignal REST API Key', 'REST_API_KEY=' + 'NjE4ZDI2MWEtOTkzYi00ZT')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('OneSignal REST API Key', 'ONESIGNAL_REST_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Customer.io API Key', () => {
+  it('matches CUSTOMERIO_API_KEY assignment', () => {
+    expect(matches('Customer.io API Key', 'CUSTOMERIO_API_KEY=' + 'cio_api_key_abcdef1234567')).toBe(true);
+  });
+  it('matches CIO_API_KEY assignment', () => {
+    expect(matches('Customer.io API Key', 'CIO_API_KEY="' + 'abcdefghijklmnopqrst1234' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Customer.io API Key', 'API_KEY=' + 'cio_api_key_abcdef1234567')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Customer.io API Key', 'CUSTOMERIO_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Svix API Key', () => {
+  it('matches SVIX_API_KEY assignment', () => {
+    expect(matches('Svix API Key', 'SVIX_API_KEY=' + 'sk_svix_abcdefghij1234567')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Svix API Key', 'SVIX_API_KEY="' + 'testsk_svix_1234567890abc' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Svix API Key', 'WEBHOOK_KEY=' + 'sk_svix_abcdefghij1234567')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Svix API Key', 'SVIX_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Knock API Key', () => {
+  it('matches KNOCK_API_KEY assignment', () => {
+    expect(matches('Knock API Key', 'KNOCK_API_KEY=' + 'sk_knock_abcdefghij123456')).toBe(true);
+  });
+  it('matches KNOCK_SECRET_API_KEY assignment', () => {
+    expect(matches('Knock API Key', 'KNOCK_SECRET_API_KEY="' + 'knock_secret_value_abcdef' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Knock API Key', 'API_KEY=' + 'sk_knock_abcdefghij123456')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Knock API Key', 'KNOCK_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Novu API Key', () => {
+  it('matches NOVU_API_KEY assignment', () => {
+    expect(matches('Novu API Key', 'NOVU_API_KEY=' + 'novu_api_key_abcdef123456')).toBe(true);
+  });
+  it('matches NOVU_SECRET_KEY assignment', () => {
+    expect(matches('Novu API Key', 'NOVU_SECRET_KEY="' + 'novu_secret_value_abcdef1' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Novu API Key', 'API_KEY=' + 'novu_api_key_abcdef123456')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Novu API Key', 'NOVU_API_KEY=abc')).toBe(false);
+  });
+});
+
 // ── Severity checks ───────────────────────────────────────────────────────────
 
 describe('pattern severity', () => {
