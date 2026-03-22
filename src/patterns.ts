@@ -1444,7 +1444,7 @@ export const PATTERNS: SecretPattern[] = [
   // Ably (Category 89)
   {
     name: 'Ably API Key',
-    pattern: /[a-zA-Z0-9_-]{6}\.[a-zA-Z0-9_-]{6}:[a-zA-Z0-9_+/=\-]{20,}/g,
+    pattern: /[a-zA-Z0-9_-]{6}\.[a-zA-Z0-9_-]{6}:[a-zA-Z0-9_+/=-]{20,}/g,
     severity: 'critical',
     description: 'Ably API key in app-id.key-id:key-secret format',
   },
@@ -1493,6 +1493,90 @@ export const PATTERNS: SecretPattern[] = [
     pattern: new RegExp("NOVU_(?:API|SECRET)_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
     severity: 'critical',
     description: 'Novu notification API/secret key in env/config assignment',
+  },
+
+  // Mistral AI (Category 95)
+  {
+    name: 'Mistral AI API Key',
+    pattern: new RegExp("MISTRAL_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Mistral AI API key in env/config assignment',
+  },
+
+  // Groq (Category 96)
+  {
+    name: 'Groq API Key',
+    pattern: /gsk_[a-zA-Z0-9]{48,}/g,
+    severity: 'critical',
+    description: 'Groq API key with gsk_ prefix',
+  },
+  {
+    name: 'Groq API Key Assignment',
+    pattern: new RegExp("GROQ_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Groq API key in env/config assignment',
+  },
+
+  // Perplexity (Category 97)
+  {
+    name: 'Perplexity API Key',
+    pattern: /pplx-[a-f0-9]{48,}/g,
+    severity: 'critical',
+    description: 'Perplexity API key with pplx- prefix',
+  },
+
+  // Together AI (Category 98)
+  {
+    name: 'Together AI API Key',
+    pattern: new RegExp("TOGETHER_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Together AI API key in env/config assignment',
+  },
+
+  // Fireworks AI (Category 99)
+  {
+    name: 'Fireworks AI API Key',
+    pattern: /fw_[a-zA-Z0-9]{20,}/g,
+    severity: 'critical',
+    description: 'Fireworks AI API key with fw_ prefix',
+  },
+  {
+    name: 'Fireworks AI API Key Assignment',
+    pattern: new RegExp("FIREWORKS_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Fireworks AI API key in env/config assignment',
+  },
+
+  // Stability AI (Category 100)
+  {
+    name: 'Stability AI API Key',
+    pattern: new RegExp("STABILITY_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Stability AI API key in env/config assignment',
+  },
+
+  // ElevenLabs (Category 101)
+  {
+    name: 'ElevenLabs API Key',
+    pattern: new RegExp("(?:ELEVENLABS|ELEVEN)_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9_-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'ElevenLabs API key in env/config assignment',
+  },
+
+  // Deepgram (Category 102)
+  {
+    name: 'Deepgram API Key',
+    pattern: new RegExp("DEEPGRAM_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9_-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Deepgram API key in env/config assignment',
+  },
+
+  // AssemblyAI (Category 103)
+  {
+    name: 'AssemblyAI API Key',
+    pattern: new RegExp("ASSEMBLYAI_API_KEY['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9_-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'AssemblyAI API key in env/config assignment',
   },
 ];
 

@@ -952,6 +952,173 @@ describe('Novu API Key', () => {
   });
 });
 
+// ── AI/ML Services (Phase 5) ──────────────────────────────────────────────────
+
+describe('Mistral AI API Key', () => {
+  it('matches MISTRAL_API_KEY assignment', () => {
+    expect(matches('Mistral AI API Key', 'MISTRAL_API_KEY=' + 'abcdef1234567890abcdef12')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Mistral AI API Key', 'MISTRAL_API_KEY="' + 'MistralKeyValue1234567890' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Mistral AI API Key', 'API_KEY=' + 'abcdef1234567890abcdef12')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Mistral AI API Key', 'MISTRAL_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Groq API Key', () => {
+  it('matches gsk_ prefix token', () => {
+    expect(matches('Groq API Key', 'gsk_' + 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4')).toBe(true);
+  });
+  it('matches in assignment context', () => {
+    expect(matches('Groq API Key', 'key=gsk_' + 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcdefghijkl')).toBe(true);
+  });
+  it('does not match without gsk_ prefix', () => {
+    expect(matches('Groq API Key', 'gk_' + 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Groq API Key', 'gsk_abc123')).toBe(false);
+  });
+});
+
+describe('Groq API Key Assignment', () => {
+  it('matches GROQ_API_KEY assignment', () => {
+    expect(matches('Groq API Key Assignment', 'GROQ_API_KEY=' + 'gsk_groq_key_value_abcdef')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Groq API Key Assignment', 'GROQ_API_KEY="' + 'groq_api_token_1234567890' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Groq API Key Assignment', 'API_KEY=' + 'gsk_groq_key_value_abcdef')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Groq API Key Assignment', 'GROQ_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Perplexity API Key', () => {
+  it('matches pplx- prefix token', () => {
+    expect(matches('Perplexity API Key', 'pplx-' + 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4')).toBe(true);
+  });
+  it('matches in assignment context', () => {
+    expect(matches('Perplexity API Key', 'key=pplx-' + 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefaa')).toBe(true);
+  });
+  it('does not match without pplx- prefix', () => {
+    expect(matches('Perplexity API Key', 'ppx-' + 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Perplexity API Key', 'pplx-abc123')).toBe(false);
+  });
+});
+
+describe('Together AI API Key', () => {
+  it('matches TOGETHER_API_KEY assignment', () => {
+    expect(matches('Together AI API Key', 'TOGETHER_API_KEY=' + 'together_key_abcdef123456')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Together AI API Key', 'TOGETHER_API_KEY="' + 'tok_together_1234567890abc' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Together AI API Key', 'API_KEY=' + 'together_key_abcdef123456')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Together AI API Key', 'TOGETHER_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Fireworks AI API Key', () => {
+  it('matches fw_ prefix token', () => {
+    expect(matches('Fireworks AI API Key', 'fw_' + 'a1b2c3d4e5f6g7h8i9j0k1l2')).toBe(true);
+  });
+  it('matches in assignment context', () => {
+    expect(matches('Fireworks AI API Key', 'key=fw_' + 'AbCdEfGhIjKlMnOpQrStUvWx')).toBe(true);
+  });
+  it('does not match without fw_ prefix', () => {
+    expect(matches('Fireworks AI API Key', 'f_' + 'a1b2c3d4e5f6g7h8i9j0k1l2')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Fireworks AI API Key', 'fw_abc')).toBe(false);
+  });
+});
+
+describe('Fireworks AI API Key Assignment', () => {
+  it('matches FIREWORKS_API_KEY assignment', () => {
+    expect(matches('Fireworks AI API Key Assignment', 'FIREWORKS_API_KEY=' + 'fw_fireworks_key_abcdef12')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Fireworks AI API Key Assignment', 'FIREWORKS_API_KEY="' + 'fireworks_token_1234567890' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Fireworks AI API Key Assignment', 'API_KEY=' + 'fw_fireworks_key_abcdef12')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Fireworks AI API Key Assignment', 'FIREWORKS_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Stability AI API Key', () => {
+  it('matches STABILITY_API_KEY assignment', () => {
+    expect(matches('Stability AI API Key', 'STABILITY_API_KEY=' + 'sk_stability_abcdef123456')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Stability AI API Key', 'STABILITY_API_KEY="' + 'stability_key_1234567890ab' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Stability AI API Key', 'API_KEY=' + 'sk_stability_abcdef123456')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Stability AI API Key', 'STABILITY_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('ElevenLabs API Key', () => {
+  it('matches ELEVENLABS_API_KEY assignment', () => {
+    expect(matches('ElevenLabs API Key', 'ELEVENLABS_API_KEY=' + 'el_api_key_abcdef12345678')).toBe(true);
+  });
+  it('matches ELEVEN_API_KEY assignment', () => {
+    expect(matches('ElevenLabs API Key', 'ELEVEN_API_KEY="' + 'elevenlabs_token_12345678' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('ElevenLabs API Key', 'API_KEY=' + 'el_api_key_abcdef12345678')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('ElevenLabs API Key', 'ELEVENLABS_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Deepgram API Key', () => {
+  it('matches DEEPGRAM_API_KEY assignment', () => {
+    expect(matches('Deepgram API Key', 'DEEPGRAM_API_KEY=' + 'dg_api_key_abcdef12345678')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Deepgram API Key', 'DEEPGRAM_API_KEY="' + 'deepgram_token_1234567890' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Deepgram API Key', 'API_KEY=' + 'dg_api_key_abcdef12345678')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Deepgram API Key', 'DEEPGRAM_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('AssemblyAI API Key', () => {
+  it('matches ASSEMBLYAI_API_KEY assignment', () => {
+    expect(matches('AssemblyAI API Key', 'ASSEMBLYAI_API_KEY=' + 'asm_api_key_abcdef1234567')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('AssemblyAI API Key', 'ASSEMBLYAI_API_KEY="' + 'assemblyai_token_12345678' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('AssemblyAI API Key', 'API_KEY=' + 'asm_api_key_abcdef1234567')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('AssemblyAI API Key', 'ASSEMBLYAI_API_KEY=abc')).toBe(false);
+  });
+});
+
 // ── Severity checks ───────────────────────────────────────────────────────────
 
 describe('pattern severity', () => {
