@@ -131,7 +131,7 @@ async function callAnthropic(finding: Finding, projectRoot: string, maxTokens: n
   const { payload, stripped } = stripSecretValues(prompt, finding.truncatedValue);
   if (stripped) {
     process.stderr.write(
-      `  [rca] ⚠ Potential secret prefix detected in prompt payload — redacted before sending.\n`,
+      `  [rca] ⚠ Potential secret prefix detected and redacted before sending.\n`,
     );
     prompt = payload;
   }
@@ -197,7 +197,7 @@ async function callOpenAI(finding: Finding, projectRoot: string, maxTokens: numb
   const { payload, stripped } = stripSecretValues(prompt, finding.truncatedValue);
   if (stripped) {
     process.stderr.write(
-      `  [rca] ⚠ Potential secret prefix detected in prompt payload — redacted before sending.\n`,
+      `  [rca] ⚠ Potential secret prefix detected and redacted before sending.\n`,
     );
     prompt = payload;
   }
@@ -271,7 +271,7 @@ export async function generateRcaForFindings(
   if (provider === 'anthropic') {
     if (!process.env['ANTHROPIC_API_KEY']) {
       process.stderr.write(
-        '  [rca] ANTHROPIC_API_KEY not set — skipping AI RCA.\n',
+        '  [rca] ANTHROPIC_API_KEY not set. Skipping AI RCA.\n',
       );
       return;
     }
@@ -287,7 +287,7 @@ export async function generateRcaForFindings(
   if (provider === 'openai') {
     if (!process.env['OPENAI_API_KEY']) {
       process.stderr.write(
-        '  [rca] OPENAI_API_KEY not set — skipping AI RCA.\n',
+        '  [rca] OPENAI_API_KEY not set. Skipping AI RCA.\n',
       );
       return;
     }

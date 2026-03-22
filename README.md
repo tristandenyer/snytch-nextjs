@@ -11,9 +11,9 @@ Bundle scanning, secret detection, and environment exposure analysis for Next.js
 
 ## Why we all need this
 
-Next.js makes it easy to accidentally expose secrets to the browser in two distinct ways. First, any variable prefixed with `NEXT_PUBLIC_` is embedded into the client bundle at build time and sent to every visitor — even if the value is a secret key that was never meant to leave the server. Second, a server-only variable without the prefix can still end up in a client bundle if it's imported by a shared module, a utility function, or a component that renders on both server and client. By the time either problem reaches production, the value is in every visitor's browser, your build artifacts, your CDN cache, and potentially your git history.
+Next.js makes it easy to accidentally expose secrets to the browser in two distinct ways. First, any variable prefixed with `NEXT_PUBLIC_` is embedded into the client bundle at build time and sent to every visitor, even if the value is a secret key that was never meant to leave the server. Second, a server-only variable without the prefix can still end up in a client bundle if it's imported by a shared module, a utility function, or a component that renders on both server and client. By the time either problem reaches production, the value is in every visitor's browser, your build artifacts, your CDN cache, and potentially your git history.
 
-The scale of this problem is larger than most teams realize. According to [GitGuardian's 2026 State of Secrets Sprawl Report](https://www.gitguardian.com/state-of-secrets-sprawl-report-2026), 28.6 million secrets were added to public GitHub commits in 2025 alone — a 34% year-over-year increase. 64% of valid secrets leaked in 2022 had still not been revoked by 2026.
+The scale of this problem is larger than most teams realize. According to [GitGuardian's 2026 State of Secrets Sprawl Report](https://www.gitguardian.com/state-of-secrets-sprawl-report-2026), 28.6 million secrets were added to public GitHub commits in 2025 alone, a 34% year-over-year increase. 64% of valid secrets leaked in 2022 had still not been revoked by 2026.
 
 `@snytch/nextjs` scans your compiled bundle, checks your `.env` files, and compares your environments to catch these issues before they reach production.
 
@@ -37,7 +37,7 @@ npm install -D @snytch/nextjs
 Scan the compiled Next.js bundle for leaked secrets in client-side JavaScript.
 
 ```bash
-# Basic scan — prints findings to the terminal
+# Basic scan: prints findings to the terminal
 snytch scan
 
 # Generate an HTML report and fail the build on any critical finding
@@ -153,17 +153,35 @@ You will be prompted to delete the generated report files when the demo complete
 
 ![AI RCA tab: Claude or GPT-4o explains what leaked, when it was introduced, how it ended up in the bundle, and how to fix it, with a before/after code example and editor prompts](https://raw.githubusercontent.com/tristandenyer/snytch-nextjs/main/docs/screenshots/snytch-report-ai-rca.png)
 
+### `snytch all`
+
+Runs `scan`, `check`, and `diff` sequentially in a single invocation. Each sub-command is isolated: if one fails, the others still run. Errors are collected and reported at the end.
+
+```bash
+snytch all [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none] [--graph] [--env .env.staging --env .env.production] [--strict]
+```
+
+- `diff` only runs when two or more `--env` flags are provided.
+- Exit code is `1` if any sub-command errors or produces findings at the configured `--fail-on` threshold.
+- All other flags (`--json`, `--report`, `--graph`, `--strict`, `--ai-provider`, `--dir`) work the same as in individual commands.
+
+The matching npm script is:
+
+```bash
+npm run snytch                # runs scan + check + diff
+```
+
 ---
 
 ## Features
 
 - Scans six surfaces per build:
-  - `.next/static/chunks` — client-side JavaScript and CSS bundles
-  - `.next/static/chunks/*.js.map` — source maps containing pre-minification source code
-  - `.next/server/pages` — `__NEXT_DATA__` blocks embedded in HTML responses
-  - `next.config.js` `env` block — values injected into all bundles at build time
-  - `.next/server/middleware.js` — compiled edge middleware
-  - `.next/trace` module dependency graph (opt-in via `--graph`) — structural import chain analysis
+  - `.next/static/chunks`: client-side JavaScript and CSS bundles
+  - `.next/static/chunks/*.js.map`: source maps containing pre-minification source code
+  - `.next/server/pages`: `__NEXT_DATA__` blocks embedded in HTML responses
+  - `next.config.js` `env` block: values injected into all bundles at build time
+  - `.next/server/middleware.js`: compiled edge middleware
+  - `.next/trace` module dependency graph (opt-in via `--graph`): structural import chain analysis
 - Detects 240+ secret patterns including:
   - AWS access keys, session tokens, and resource ARNs
   - Stripe, Square, PayPal, Braintree, Coinbase, Razorpay, Adyen, Lemon Squeezy, Paddle, and Recurly keys
@@ -215,7 +233,7 @@ The assistant gets structured results back and can propose fixes inline, in the 
 
 ```jsonc
 // Input
-{ "dir": "./.next" }   // optional — defaults to <cwd>/.next
+{ "dir": "./.next" }   // optional, defaults to <cwd>/.next
 
 // Output
 {
@@ -228,7 +246,7 @@ The assistant gets structured results back and can propose fixes inline, in the 
 
 ```jsonc
 // Input
-{ "envFiles": [".env.local", ".env.production"] }  // optional — auto-detects from cwd
+{ "envFiles": [".env.local", ".env.production"] }  // optional, auto-detects from cwd
 
 // Output
 {
@@ -241,9 +259,9 @@ The assistant gets structured results back and can propose fixes inline, in the 
 
 ```jsonc
 // Input
-{ "envFiles": [".env.staging", ".env.production"] }  // required — minimum 2 files
+{ "envFiles": [".env.staging", ".env.production"] }  // required, minimum 2 files
 
-// Output (key names only — values are never read into output)
+// Output (key names only, values are never read into output)
 {
   "inSync":    ["DATABASE_URL", "REDIS_URL"],
   "drift":     [{ "key": "API_KEY", "presentIn": [".env.staging"], "missingFrom": [".env.production"] }],
@@ -337,7 +355,7 @@ export default {
   suppress: [
     {
       pattern: 'JWT Token',
-      reason: 'Internal session token — not a credential, reviewed 2026-03-21',
+      reason: 'Internal session token, not a credential. Reviewed 2026-03-21',
       addedBy: '@alice',
       until: '2026-06-01',
     },
@@ -369,10 +387,10 @@ Each entry in the `suppress` array supports the following fields:
 | `reason`  | yes      | Why this finding is being suppressed. Shown in the report and terminal output.                                                                      |
 | `pattern` | no       | Substring match against the finding's pattern name. Omit to match all patterns.                                                                     |
 | `surface` | no       | Limit to a specific scan surface: `pattern-match`, `next-data`, `config-env`, `middleware-secret`, `sourcemap-secret`.                              |
-| `addedBy` | no       | The person who added this rule — a name, username, or email. Shown in the report so others know who to ask about it.                                |
+| `addedBy` | no       | The person who added this rule: a name, username, or email. Shown in the report so others know who to ask about it.                                |
 | `until`   | no       | ISO-8601 expiry date (`"YYYY-MM-DD"`). The rule stops suppressing findings on this date and appears as a warning in the report and terminal output. |
 
-Rules with an expired `until` date are never silently dropped — they surface as warnings so your team knows to remove or extend them.
+Rules with an expired `until` date are never silently dropped. They surface as warnings so your team knows to remove or extend them.
 
 ---
 

@@ -140,7 +140,7 @@ export function applyCheckRules(
       reason: 'serverOnly',
       patternName: 'serverOnly config',
       description:
-        `${bareName} is declared serverOnly in snytch.config.js — removing ` +
+        `${bareName} is declared serverOnly in snytch.config.js. Removing ` +
         `NEXT_PUBLIC_ prefix will keep it server-side`,
       envFile,
       line,

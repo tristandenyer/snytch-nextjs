@@ -119,7 +119,7 @@ const SCAN_FINDINGS: Finding[] = [
     type: 'sourcemap-secret',
     patternName: 'Twilio Auth Token',
     severity: 'warning',
-    description: 'Twilio auth token found in source map — may not be in live bundle',
+    description: 'Twilio auth token found in source map, may not be in live bundle',
     filePath: `${CHUNKS_DIR}/main-d9a721cc.js.map`,
     charOffset: 4418,
     truncatedValue: 'SKabcdef•••',
@@ -139,13 +139,13 @@ const SCAN_FINDINGS: Finding[] = [
 const DEMO_SUPPRESS_RULES = {
   jwtInternal: {
     pattern: 'JWT Token',
-    reason: 'Internal session token used by auth middleware — not a credential, reviewed 2026-03-21',
+    reason: 'Internal session token used by auth middleware. Not a credential, reviewed 2026-03-21',
     until: '2026-09-01',
     addedBy: '@alice',
   },
   npmExpired: {
     pattern: 'NPM Token',
-    reason: 'Read-only publish token — rotated quarterly, suppression was not extended',
+    reason: 'Read-only publish token, rotated quarterly. Suppression was not extended',
     until: '2026-01-15', // expired
     addedBy: '@bob',
   },
@@ -186,7 +186,7 @@ const CHECK_FINDINGS: CheckFinding[] = [
     severity: 'critical',
     reason: 'pattern-match',
     patternName: 'Stripe Live Secret Key',
-    description: 'Stripe live secret key — must never be exposed to the browser',
+    description: 'Stripe live secret key, must never be exposed to the browser',
     envFile: '.env.local',
     line: 4,
     truncatedValue: 'sk_live_•••',
@@ -196,7 +196,7 @@ const CHECK_FINDINGS: CheckFinding[] = [
     severity: 'critical',
     reason: 'pattern-match',
     patternName: 'Anthropic API Key',
-    description: 'Anthropic API key — must never be exposed to the browser',
+    description: 'Anthropic API key, must never be exposed to the browser',
     envFile: '.env.local',
     line: 7,
     truncatedValue: 'sk-ant-ap•••',
@@ -206,7 +206,7 @@ const CHECK_FINDINGS: CheckFinding[] = [
     severity: 'critical',
     reason: 'serverOnly',
     patternName: 'serverOnly config',
-    description: 'Listed in snytch.config.json serverOnly — must not be NEXT_PUBLIC_',
+    description: 'Listed in snytch.config.json serverOnly, must not be NEXT_PUBLIC_',
     envFile: '.env.production',
     line: 12,
     truncatedValue: 'tok_live_•••',
@@ -216,7 +216,7 @@ const CHECK_FINDINGS: CheckFinding[] = [
     severity: 'warning',
     reason: 'high-entropy',
     patternName: 'High Entropy',
-    description: 'High-entropy value detected — may be a secret',
+    description: 'High-entropy value detected, may be a secret',
     envFile: '.env.local',
     line: 11,
     truncatedValue: 'Xk92mNpQ•••',
@@ -325,13 +325,13 @@ export async function runDemo(projectRoot: string): Promise<void> {
 
   // ── Intro ──────────────────────────────────────────────────────────────────
   console.log('');
-  console.log(chalk.bold.yellow('  ⚠  DEMO MODE — all findings are synthetic'));
+  console.log(chalk.bold.yellow('  ⚠  DEMO MODE: all findings are synthetic'));
   console.log(chalk.dim('  No real files are scanned. This output is identical to a live run.'));
 
   // ── Section 1: scan ────────────────────────────────────────────────────────
   banner('snytch scan  ·  bundle + source map secret detection');
   printScanResult(SCAN_RESULT, SCAN_OPTIONS);
-  console.log(chalk.dim('  Source map findings ([source map]) are always [WARN] — the value may'));
+  console.log(chalk.dim('  Source map findings ([source map]) are always [WARN]. The value may'));
   console.log(chalk.dim('  not be reachable in the live bundle, but was present at build time.'));
 
   // ── Section 2: check ──────────────────────────────────────────────────────
@@ -380,7 +380,7 @@ export async function runDemo(projectRoot: string): Promise<void> {
 
   // ── Footer ─────────────────────────────────────────────────────────────────
   console.log('');
-  console.log(chalk.bold.yellow('  ⚠  DEMO COMPLETE — exit code will be 1 (critical findings detected)'));
+  console.log(chalk.bold.yellow('  ⚠  DEMO COMPLETE. Exit code will be 1 (critical findings detected).'));
   console.log(chalk.dim('  In CI, this exit code would fail the build.'));
   console.log('');
 

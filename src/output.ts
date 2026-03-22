@@ -79,7 +79,7 @@ function printSuppressionSummary(
   for (const rule of expiredRules) {
     console.log(
       chalk.yellow(
-        `  ⚠  Suppression rule expired — reason: "${rule.reason}"${rule.until ? ` (until: ${rule.until})` : ''}`,
+        `  ⚠  Suppression rule expired. Reason: "${rule.reason}"${rule.until ? ` (until: ${rule.until})` : ''}`,
       ),
     );
     console.log(
@@ -123,7 +123,7 @@ export function printScanResult(
     console.log('');
     console.log(
       chalk.green(
-        '  ✓ snytch: clean — no secrets detected in client bundle',
+        '  ✓ snytch ran clean. No secrets detected in client bundle.',
       ),
     );
     console.log('');
@@ -288,7 +288,7 @@ export function printDiffResult(result: DiffResult, options: DiffOptions): void 
   } else {
     console.log(chalk.red(`  ${outOfSyncCount} variable${outOfSyncCount === 1 ? '' : 's'} out of sync.`));
   }
-  console.log(chalk.dim('  values are never compared — key presence only'));
+  console.log(chalk.dim('  values are never compared, key presence only'));
   console.log('');
 
   if (options.report) {
@@ -313,7 +313,7 @@ export function printCheckResult(
 
   if (result.findings.length === 0) {
     console.log('');
-    console.log(chalk.green('  ✓ snytch: clean — no NEXT_PUBLIC_ secrets detected'));
+    console.log(chalk.green('  ✓ snytch ran clean. No NEXT_PUBLIC_ secrets detected.'));
     if (options.report) {
       console.log('');
       generateCheckReport(result, options);
@@ -345,3 +345,4 @@ export function printCheckResult(
   }
   console.log('');
 }
+

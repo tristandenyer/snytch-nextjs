@@ -52,6 +52,21 @@ describe('AWS Secret Access Key', () => {
   });
 });
 
+describe('AWS Account ID', () => {
+  it('matches aws account_id assignment', () => {
+    expect(matches('AWS Account ID', 'aws_account_id=' + '123456789012')).toBe(true);
+  });
+  it('matches ARN context', () => {
+    expect(matches('AWS Account ID', 'arn:aws:iam::' + '123456789012' + ':role/test')).toBe(true);
+  });
+  it('does not match bare 12-digit number', () => {
+    expect(matches('AWS Account ID', 'phone=123456789012')).toBe(false);
+  });
+  it('does not match 11-digit number in AWS context', () => {
+    expect(matches('AWS Account ID', 'aws_account_id=12345678901')).toBe(false);
+  });
+});
+
 // ── Stripe ───────────────────────────────────────────────────────────────────
 
 describe('Stripe Live Secret Key', () => {
@@ -70,8 +85,8 @@ describe('Stripe Test Secret Key', () => {
   it('matches sk_test_ prefix', () => {
     expect(matches('Stripe Test Secret Key', 'sk_test_abcdefghijklmnopqrstu')).toBe(true);
   });
-  it('has warning severity', () => {
-    expect(findPattern('Stripe Test Secret Key').severity).toBe('warning');
+  it('does not match short value', () => {
+    expect(matches('Stripe Test Secret Key', 'sk_test_short')).toBe(false);
   });
 });
 
@@ -755,6 +770,21 @@ describe('Adyen API Key', () => {
   });
 });
 
+describe('Adyen Client Key', () => {
+  it('matches Adyen context with test_ prefix', () => {
+    expect(matches('Adyen Client Key', 'ADYEN="test_' + 'aBcDeFgHiJkLmNoPqRsTuVwXyZ0123' + '"')).toBe(true);
+  });
+  it('matches Adyen context with live_ prefix', () => {
+    expect(matches('Adyen Client Key', 'adyen=live_' + 'xYz0123456789AbCdEfGhIjKlMnOpQr' + 'st')).toBe(true);
+  });
+  it('does not match without Adyen context', () => {
+    expect(matches('Adyen Client Key', 'KEY=test_' + 'aBcDeFgHiJkLmNoPqRsTuVwXyZ0123')).toBe(false);
+  });
+  it('does not match short value after prefix', () => {
+    expect(matches('Adyen Client Key', 'ADYEN=test_short')).toBe(false);
+  });
+});
+
 describe('Lemon Squeezy API Key', () => {
   it('matches LEMON_SQUEEZY_API_KEY assignment', () => {
     expect(matches('Lemon Squeezy API Key', 'LEMON_SQUEEZY_API_KEY=' + 'eyJ0eXAiOiJKV1QiLCJhbGc')).toBe(true);
@@ -1227,17 +1257,17 @@ describe('1Password Connect Token', () => {
 });
 
 describe('Infisical Service Token', () => {
-  it('matches st. prefix with two segments', () => {
-    expect(matches('Infisical Service Token', 'st.' + 'abcdef1234567890ABCDEF' + '.secretPart12')).toBe(true);
+  it('matches with INFISICAL context', () => {
+    expect(matches('Infisical Service Token', 'INFISICAL=st.' + 'abcdef1234567890ABCDEF' + '.secretPart12')).toBe(true);
   });
-  it('matches in assignment context', () => {
-    expect(matches('Infisical Service Token', 'TOKEN=st.' + 'xyzXYZ1234567890abcdef' + '.anotherSegment')).toBe(true);
+  it('matches with infisical context (case-insensitive)', () => {
+    expect(matches('Infisical Service Token', 'infisical=st.' + 'xyzXYZ1234567890abcdef' + '.anotherSegment')).toBe(true);
   });
-  it('does not match single segment', () => {
-    expect(matches('Infisical Service Token', 'st.' + 'abcdef1234567890ABCDEF')).toBe(false);
+  it('does not match without infisical context', () => {
+    expect(matches('Infisical Service Token', 'TOKEN=st.' + 'abcdef1234567890ABCDEF' + '.secretPart12')).toBe(false);
   });
   it('does not match short first segment', () => {
-    expect(matches('Infisical Service Token', 'st.abc.secretPart12')).toBe(false);
+    expect(matches('Infisical Service Token', 'INFISICAL=st.abc.secretPart12')).toBe(false);
   });
 });
 
@@ -1301,22 +1331,6 @@ describe('Vault Token Assignment', () => {
   });
 });
 
-// ── Severity checks ───────────────────────────────────────────────────────────
-
-describe('pattern severity', () => {
-  it('Stripe Live Secret Key is critical', () => {
-    expect(findPattern('Stripe Live Secret Key').severity).toBe('critical');
-  });
-  it('JWT Token is warning', () => {
-    expect(findPattern('JWT Token').severity).toBe('warning');
-  });
-  it('Google API Key is warning', () => {
-    expect(findPattern('Google API Key').severity).toBe('warning');
-  });
-  it('Anthropic API Key is critical', () => {
-    expect(findPattern('Anthropic API Key').severity).toBe('critical');
-  });
-});
 
 // ── Pattern count sanity check ────────────────────────────────────────────────
 

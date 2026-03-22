@@ -209,3 +209,51 @@ export interface DiffResult {
   onlyInOne: { key: string; file: string }[];
   durationMs: number;
 }
+
+// ── Audit types (combined scan + check + diff) ───────────────────────────────
+
+/**
+ * Options for the `snytch audit` command, which runs scan, check, and
+ * optionally diff in a single sequential invocation.
+ */
+export interface AllOptions {
+  projectRoot: string;
+  json: boolean;
+  report: boolean;
+  failOn: FailOn;
+  aiProvider?: AiProvider;
+  /** Maximum tokens for AI RCA responses. Defaults to 2048. */
+  rcaMaxTokens?: number;
+  /** When true, run module graph analysis during scan. */
+  graph?: boolean;
+  /** Explicit env file paths. Diff runs only when 2+ files are provided. */
+  envFiles?: string[];
+  /** When true, diff fails on any drift (not just serverOnly keys). */
+  strict: boolean;
+  /** serverOnly key names from config. */
+  serverOnly: string[];
+  /** Build output directory. Defaults to `<projectRoot>/.next`. */
+  dir: string;
+}
+
+/**
+ * An error captured from a sub-command that did not prevent other
+ * sub-commands from running.
+ */
+export interface AllError {
+  /** Which sub-command failed. */
+  command: 'scan' | 'check' | 'diff';
+  /** The error message. */
+  message: string;
+}
+
+/**
+ * Combined result of running scan + check + (optionally) diff.
+ */
+export interface AllResult {
+  scan: ScanResult | null;
+  check: CheckResult | null;
+  diff: DiffResult | null;
+  errors: AllError[];
+  durationMs: number;
+}

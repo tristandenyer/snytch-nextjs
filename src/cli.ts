@@ -5,10 +5,11 @@ import { resolve, basename } from 'path';
 import { scan } from './commands/scan.js';
 import { check } from './commands/check.js';
 import { diff } from './commands/diff.js';
+import { runAll } from './commands/audit.js';
 import { runDemo } from './commands/demo.js';
 import { startMcpServer } from './mcp.js';
 import { printScanResult, printCheckResult, printDiffResult } from './output.js';
-import { ScanOptions, CheckOptions, DiffOptions, FailOn, AiProvider } from './types.js';
+import { ScanOptions, CheckOptions, DiffOptions, AllOptions, FailOn, AiProvider } from './types.js';
 import { loadConfig } from './config.js';
 
 function parseFailOn(args: string[], i: number): FailOn {
@@ -22,11 +23,12 @@ async function main() {
   const command = args[0];
   const projectRoot = cwd();
 
-  if (!command || (command !== 'scan' && command !== 'check' && command !== 'diff' && command !== 'mcp' && command !== 'demo')) {
+  if (!command || !['scan', 'check', 'diff', 'all', 'mcp', 'demo'].includes(command)) {
     console.error('Usage:');
     console.error('  snytch scan [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none] [--graph]');
     console.error('  snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|all]');
     console.error('  snytch diff --env .env.staging --env .env.production [--json] [--report] [--strict]');
+    console.error('  snytch all [options]   Run scan + check + diff sequentially');
     console.error('  snytch demo');
     console.error('  snytch mcp');
     console.error('');
@@ -144,6 +146,99 @@ async function main() {
           ...result.onlyInOne.map((o) => o.key),
         ]);
         shouldFail = serverOnly.some((k) => driftedKeys.has(k));
+      }
+
+      process.exit(shouldFail ? 1 : 0);
+
+    } else if (command === 'all') {
+      const config = loadConfig(projectRoot);
+      const serverOnly = config?.serverOnly ?? [];
+
+      const allOptions: AllOptions = {
+        projectRoot,
+        json,
+        report,
+        failOn,
+        aiProvider,
+        rcaMaxTokens: config?.rca?.maxTokens,
+        graph,
+        envFiles: envFiles.length > 0 ? envFiles : undefined,
+        strict,
+        serverOnly,
+        dir,
+      };
+
+      const result = await runAll(allOptions);
+
+      // Print results through existing formatters
+      if (result.scan) {
+        printScanResult(result.scan, {
+          dir,
+          projectRoot,
+          json,
+          report,
+          failOn,
+          aiProvider,
+          rcaMaxTokens: config?.rca?.maxTokens,
+          graph,
+        });
+      }
+
+      if (result.check) {
+        printCheckResult(result.check, {
+          projectRoot,
+          json,
+          report,
+          failOn,
+          envFiles: envFiles.length > 0 ? envFiles : undefined,
+        });
+      }
+
+      if (result.diff) {
+        const resolvedFiles = envFiles.map((p) => ({
+          path: resolve(p),
+          label: basename(p),
+        }));
+        printDiffResult(result.diff, {
+          envFiles: resolvedFiles,
+          projectRoot,
+          json,
+          report,
+          strict,
+          serverOnly,
+        });
+      }
+
+      for (const err of result.errors) {
+        console.error(`Error in ${err.command}: ${err.message}`);
+      }
+
+      // Exit 1 if any sub-command produced findings at the configured threshold
+      let shouldFail = result.errors.length > 0;
+
+      if (!shouldFail && result.scan) {
+        if (failOn === 'critical') shouldFail = result.scan.findings.some((f) => f.severity === 'critical');
+        else if (failOn === 'warning') shouldFail = result.scan.findings.some((f) => f.severity === 'critical' || f.severity === 'warning');
+        else if (failOn === 'all') shouldFail = result.scan.findings.length > 0;
+      }
+
+      if (!shouldFail && result.check) {
+        if (failOn === 'critical') shouldFail = result.check.findings.some((f) => f.severity === 'critical');
+        else if (failOn === 'warning') shouldFail = result.check.findings.some((f) => f.severity === 'critical' || f.severity === 'warning');
+        else if (failOn === 'all') shouldFail = result.check.findings.length > 0;
+      }
+
+      if (!shouldFail && result.diff) {
+        const outOfSyncCount = result.diff.drift.length + result.diff.onlyInOne.length;
+        if (strict) {
+          shouldFail = outOfSyncCount > 0;
+        } else if (serverOnly.length > 0) {
+          const driftedKeys = new Set([
+            ...result.diff.drift.map((d) => d.key),
+            ...result.diff.onlyInOne.map((o) => o.key),
+          ]);
+          shouldFail = serverOnly.some((k) => driftedKeys.has(k));
+        }
       }
 
       process.exit(shouldFail ? 1 : 0);

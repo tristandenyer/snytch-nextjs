@@ -1,6 +1,6 @@
 {
   "name": "@snytch/nextjs",
-  "version": "0.10.0",
+  "version": "0.12.0",
   "description": "Bundle scanning, NEXT_PUBLIC_ exposure detection, and environment drift for Next.js",
   "type": "module",
   "main": "./dist/cli.js",
@@ -24,6 +24,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build",
+    "snytch": "node ./dist/cli.js all",
+    "snytch:scan": "node ./dist/cli.js scan",
+    "snytch:check": "node ./dist/cli.js check",
+    "snytch:diff": "node ./dist/cli.js diff",
     "snytch:demo": "node ./dist/cli.js demo"
   },
   "keywords": [

@@ -58,9 +58,9 @@ export const PATTERNS: SecretPattern[] = [
   },
   {
     name: 'AWS Account ID',
-    pattern: /\b([0-9]{12})\b/g,
+    pattern: new RegExp("(?:(?:aws|amazon|iam|account.?id)['\"]?\\s*[:=]\\s*['\"]?|arn:aws:[a-z0-9-]+::['\"]?)([0-9]{12})\\b", "gi"),
     severity: 'warning',
-    description: 'Potential AWS Account ID (12 digits)',
+    description: 'Potential AWS Account ID (12 digits) in assignment context',
   },
 
   // Stripe (Category 2)
@@ -1022,7 +1022,7 @@ export const PATTERNS: SecretPattern[] = [
     name: 'Environment Variable with Secret Value',
     pattern: new RegExp("(?:password|secret|token|api_?key)\\s*=\\s*['\"]?[a-zA-Z0-9_!@#$%^&*().-]{12,}['\"]?", "gi"),
     severity: 'warning',
-    description: 'Heuristic match on a secret-like assignment — may be a false positive from URL parsers or framework internals. Confirm no real credential is present.',
+    description: 'Heuristic match on a secret-like assignment. May be a false positive from URL parsers or framework internals. Confirm no real credential is present.',
   },
   {
     name: 'OAuth Access Token Pattern',
@@ -1392,9 +1392,9 @@ export const PATTERNS: SecretPattern[] = [
   },
   {
     name: 'Adyen Client Key',
-    pattern: /(?:test|live)_[a-zA-Z0-9]{28,}/g,
+    pattern: new RegExp("(?:adyen|ADYEN)['\"]?\\s*[:=]\\s*['\"]?(?:test|live)_[a-zA-Z0-9]{28,}", "g"),
     severity: 'warning',
-    description: 'Adyen client key (test or live prefix)',
+    description: 'Adyen client key (test or live prefix) in Adyen-context assignment',
   },
 
   // Lemon Squeezy (Category 85)
@@ -1632,9 +1632,9 @@ export const PATTERNS: SecretPattern[] = [
   // Infisical (Category 108)
   {
     name: 'Infisical Service Token',
-    pattern: /st\.[a-zA-Z0-9]{20,}\.[a-zA-Z0-9]{10,}/g,
+    pattern: new RegExp("(?:infisical|INFISICAL)['\"]?\\s*[:=]\\s*['\"]?st\\.[a-zA-Z0-9]{20,}\\.[a-zA-Z0-9]{10,}", "gi"),
     severity: 'critical',
-    description: 'Infisical service token',
+    description: 'Infisical service token in assignment context',
   },
   {
     name: 'Infisical API Key',

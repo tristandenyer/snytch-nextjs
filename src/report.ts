@@ -188,7 +188,7 @@ function renderRcaTab(result: ScanResult, projectRoot: string): string {
   if (criticals.length === 0) {
     const hasCriticals = result.findings.some((f) => f.severity === 'critical');
     if (!hasCriticals) {
-      return `<div class="placeholder">No critical findings — AI RCA not needed.</div>`;
+      return `<div class="placeholder">No critical findings. AI RCA not needed.</div>`;
     }
     return `
       <div class="placeholder">
@@ -253,7 +253,10 @@ function renderSuppressCard(sf: SuppressedFinding, projectRoot: string, today: s
  * @returns HTML string for the tab panel content.
  */
 function renderSuppressionsTab(result: ScanResult, projectRoot: string, today: string): string {
-  const total = result.suppressedFindings.length + result.expiredRules.length;
+  const expiredOnlyCount = result.expiredRules.filter(
+    (rule) => !result.suppressedFindings.some((sf) => sf.rule === rule),
+  ).length;
+  const total = result.suppressedFindings.length + expiredOnlyCount;
 
   if (total === 0) {
     return `<div class="placeholder">No suppression rules are active in this run.</div>`;
@@ -703,7 +706,7 @@ function buildHtml(
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('findings')">Findings</button>
     <button class="tab-btn" onclick="showTab('rca')">AI RCA</button>
-    <button class="tab-btn" onclick="showTab('suppressions')">Suppressions${result.suppressedFindings.length + result.expiredRules.length > 0 ? ` (${result.suppressedFindings.length + result.expiredRules.length})` : ''}</button>
+    <button class="tab-btn" onclick="showTab('suppressions')">Suppressions${(() => { const expiredOnly = result.expiredRules.filter((rule) => !result.suppressedFindings.some((sf) => sf.rule === rule)).length; const count = result.suppressedFindings.length + expiredOnly; return count > 0 ? ` (${count})` : ''; })()}</button>
   </div>
 
   <div id="tab-findings" class="tab-panel active">
@@ -991,7 +994,7 @@ function buildDiffHtml(result: DiffResult, gitSha: string, timestamp: string): s
 <body>
   <div class="header">
     <h1>snytch diff report</h1>
-    <p class="header-subtitle">Environment variable drift across your .env files — keys that are missing, mismatched, or only present in one environment.</p>
+    <p class="header-subtitle">Environment variable drift across your .env files: keys that are missing, mismatched, or only present in one environment.</p>
     <div class="header-meta">commit ${escapeHtml(gitSha)} &nbsp;·&nbsp; ${escapeHtml(timestamp)} &nbsp;·&nbsp; ${totalKeys} key${totalKeys === 1 ? '' : 's'} across ${labels.length} files</div>
   </div>
   <div class="content">
@@ -1020,7 +1023,7 @@ function buildDiffHtml(result: DiffResult, gitSha: string, timestamp: string): s
         ${syncRows}
       </tbody>
     </table>
-    <div class="footer-note">values are never compared — key presence only</div>
+    <div class="footer-note">values are never compared, key presence only</div>
   </div>
 </body>
 </html>`;
