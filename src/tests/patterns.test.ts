@@ -1119,6 +1119,188 @@ describe('AssemblyAI API Key', () => {
   });
 });
 
+// ── Phase 6: Secret Formats & Vault Providers ────────────────────────────────
+
+describe('Age Secret Key', () => {
+  it('matches AGE-SECRET-KEY-1 prefix', () => {
+    expect(matches('Age Secret Key', 'AGE-SECRET-KEY-1' + 'QWERTY1234ABCDEF5678QWERTY1234ABCDEF5678QWERTY1234ABCDEF56781A')).toBe(true);
+  });
+  it('matches another age secret key', () => {
+    expect(matches('Age Secret Key', 'key: AGE-SECRET-KEY-1' + 'abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ')).toBe(true);
+  });
+  it('does not match short value', () => {
+    expect(matches('Age Secret Key', 'AGE-SECRET-KEY-1abc')).toBe(false);
+  });
+  it('does not match public key prefix', () => {
+    expect(matches('Age Secret Key', 'age1qwerty1234abcdef5678')).toBe(false);
+  });
+});
+
+describe('PFX Password', () => {
+  it('matches PFX_PASSWORD assignment', () => {
+    expect(matches('PFX Password', 'PFX_PASSWORD=' + 'MySecureP@ss1234')).toBe(true);
+  });
+  it('matches PKCS12_PASSWORD quoted', () => {
+    expect(matches('PFX Password', 'PKCS12_PASSWORD="' + 'CertPass!2026' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('PFX Password', 'PASSWORD=' + 'MySecureP@ss1234')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('PFX Password', 'PFX_PASSWORD=abc')).toBe(false);
+  });
+});
+
+describe('Doppler Service Token', () => {
+  it('matches dp.st. prefix', () => {
+    expect(matches('Doppler Service Token', 'dp.st.' + 'abcdef1234567890ABCDEF')).toBe(true);
+  });
+  it('matches in assignment context', () => {
+    expect(matches('Doppler Service Token', 'DOPPLER_TOKEN=dp.st.' + 'xyzXYZ1234567890abcdef')).toBe(true);
+  });
+  it('does not match dp.ct. prefix', () => {
+    expect(matches('Doppler Service Token', 'dp.ct.' + 'abcdef1234567890ABCDEF')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Doppler Service Token', 'dp.st.abc')).toBe(false);
+  });
+});
+
+describe('Doppler CLI Token', () => {
+  it('matches dp.ct. prefix', () => {
+    expect(matches('Doppler CLI Token', 'dp.ct.' + 'abcdef1234567890ABCDEF')).toBe(true);
+  });
+  it('matches in config context', () => {
+    expect(matches('Doppler CLI Token', 'token: dp.ct.' + 'longTokenValue1234567890')).toBe(true);
+  });
+  it('does not match dp.st. prefix', () => {
+    expect(matches('Doppler CLI Token', 'dp.st.' + 'abcdef1234567890ABCDEF')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Doppler CLI Token', 'dp.ct.abc')).toBe(false);
+  });
+});
+
+describe('Doppler Project Token', () => {
+  it('matches dp.pt. prefix', () => {
+    expect(matches('Doppler Project Token', 'dp.pt.' + 'abcdef1234567890ABCDEF')).toBe(true);
+  });
+  it('matches in quoted context', () => {
+    expect(matches('Doppler Project Token', '"dp.pt.' + 'ProjectToken12345678ab"')).toBe(true);
+  });
+  it('does not match dp.st. prefix', () => {
+    expect(matches('Doppler Project Token', 'dp.st.' + 'abcdef1234567890ABCDEF')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Doppler Project Token', 'dp.pt.abc')).toBe(false);
+  });
+});
+
+describe('1Password Service Account Token', () => {
+  it('matches ops_ prefix with base64', () => {
+    expect(matches('1Password Service Account Token', 'ops_' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop==')).toBe(true);
+  });
+  it('matches in assignment', () => {
+    expect(matches('1Password Service Account Token', 'TOKEN=ops_' + 'xyzXYZ1234567890abcdefGHIJKLMNOPQRSTUVWXYZ+/')).toBe(true);
+  });
+  it('does not match short value', () => {
+    expect(matches('1Password Service Account Token', 'ops_abc123')).toBe(false);
+  });
+  it('does not match without ops_ prefix', () => {
+    expect(matches('1Password Service Account Token', 'op_' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop==')).toBe(false);
+  });
+});
+
+describe('1Password Connect Token', () => {
+  it('matches OP_CONNECT_TOKEN assignment', () => {
+    expect(matches('1Password Connect Token', 'OP_CONNECT_TOKEN=' + 'eyJhbGciOiJFUzI1NiIsInR5c')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('1Password Connect Token', 'OP_CONNECT_TOKEN="' + 'connect_token_value_12345' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('1Password Connect Token', 'CONNECT_TOKEN=' + 'eyJhbGciOiJFUzI1NiIsInR5c')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('1Password Connect Token', 'OP_CONNECT_TOKEN=abc')).toBe(false);
+  });
+});
+
+describe('Infisical Service Token', () => {
+  it('matches st. prefix with two segments', () => {
+    expect(matches('Infisical Service Token', 'st.' + 'abcdef1234567890ABCDEF' + '.secretPart12')).toBe(true);
+  });
+  it('matches in assignment context', () => {
+    expect(matches('Infisical Service Token', 'TOKEN=st.' + 'xyzXYZ1234567890abcdef' + '.anotherSegment')).toBe(true);
+  });
+  it('does not match single segment', () => {
+    expect(matches('Infisical Service Token', 'st.' + 'abcdef1234567890ABCDEF')).toBe(false);
+  });
+  it('does not match short first segment', () => {
+    expect(matches('Infisical Service Token', 'st.abc.secretPart12')).toBe(false);
+  });
+});
+
+describe('Infisical API Key', () => {
+  it('matches INFISICAL_API_KEY assignment', () => {
+    expect(matches('Infisical API Key', 'INFISICAL_API_KEY=' + 'inf_apikey_abcdef12345678')).toBe(true);
+  });
+  it('matches INFISICAL_TOKEN assignment', () => {
+    expect(matches('Infisical API Key', 'INFISICAL_TOKEN="' + 'infisical_token_1234567890' + '"')).toBe(true);
+  });
+  it('does not match without env var name', () => {
+    expect(matches('Infisical API Key', 'API_KEY=' + 'inf_apikey_abcdef12345678')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Infisical API Key', 'INFISICAL_API_KEY=abc')).toBe(false);
+  });
+});
+
+describe('Vault Batch Token', () => {
+  it('matches hvb. prefix', () => {
+    expect(matches('Vault Batch Token', 'hvb.' + 'ABCDEF1234567890abcdef')).toBe(true);
+  });
+  it('matches in assignment', () => {
+    expect(matches('Vault Batch Token', 'VAULT_TOKEN=hvb.' + 'batchTokenValue1234567890')).toBe(true);
+  });
+  it('does not match hvs. prefix', () => {
+    expect(matches('Vault Batch Token', 'hvs.' + 'ABCDEF1234567890abcdef')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Vault Batch Token', 'hvb.abc')).toBe(false);
+  });
+});
+
+describe('Vault Recovery Token', () => {
+  it('matches hvr. prefix', () => {
+    expect(matches('Vault Recovery Token', 'hvr.' + 'ABCDEF1234567890abcdef')).toBe(true);
+  });
+  it('matches in config context', () => {
+    expect(matches('Vault Recovery Token', 'recovery: hvr.' + 'recoveryTokenValue12345678')).toBe(true);
+  });
+  it('does not match hvs. prefix', () => {
+    expect(matches('Vault Recovery Token', 'hvs.' + 'ABCDEF1234567890abcdef')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Vault Recovery Token', 'hvr.abc')).toBe(false);
+  });
+});
+
+describe('Vault Token Assignment', () => {
+  it('matches VAULT_TOKEN assignment', () => {
+    expect(matches('Vault Token Assignment', 'VAULT_TOKEN=' + 'hvs.CAESIMii29MBZNpqR')).toBe(true);
+  });
+  it('matches quoted assignment', () => {
+    expect(matches('Vault Token Assignment', 'VAULT_TOKEN="' + 's.abcdef1234567890ABCDEF' + '"')).toBe(true);
+  });
+  it('does not match without VAULT_TOKEN name', () => {
+    expect(matches('Vault Token Assignment', 'TOKEN=' + 'hvs.CAESIMii29MBZNpqR')).toBe(false);
+  });
+  it('does not match short value', () => {
+    expect(matches('Vault Token Assignment', 'VAULT_TOKEN=abc')).toBe(false);
+  });
+});
+
 // ── Severity checks ───────────────────────────────────────────────────────────
 
 describe('pattern severity', () => {

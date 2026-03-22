@@ -22,7 +22,8 @@ All notable changes to `@snytch/nextjs` are documented here.
 - **Payments and fintech patterns**: Razorpay (live/test key IDs + key secret), Adyen (API key + client key), Lemon Squeezy (API key + signing secret), Paddle (API key + webhook secret), Recurly (API key).
 - **Communication and notification patterns**: Pusher (app secret), Ably (API key format + env var), OneSignal, Customer.io, Svix, Knock, Novu.
 - **AI and ML service patterns**: Mistral AI, Groq (`gsk_` prefix + env var), Perplexity (`pplx-` prefix), Together AI, Fireworks AI (`fw_` prefix + env var), Stability AI, ElevenLabs, Deepgram, AssemblyAI.
-- Pattern count increased from 192 to 231.
+- **Secret formats and vault providers**: Age encryption secret keys, PKCS#12/PFX certificate passwords, Doppler (service/CLI/project tokens with `dp.st.`/`dp.ct.`/`dp.pt.` prefixes), 1Password (service account `ops_` tokens + Connect token), Infisical (service tokens + API key), HashiCorp Vault expanded (`hvb.` batch tokens, `hvr.` recovery tokens, `VAULT_TOKEN` env var assignment).
+- Pattern count increased from 192 to 243.
 
 ---
 

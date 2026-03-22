@@ -1578,5 +1578,89 @@ export const PATTERNS: SecretPattern[] = [
     severity: 'critical',
     description: 'AssemblyAI API key in env/config assignment',
   },
+
+  // Age Encryption (Category 104)
+  {
+    name: 'Age Secret Key',
+    pattern: /AGE-SECRET-KEY-1[a-zA-Z0-9]{58,}/g,
+    severity: 'critical',
+    description: 'Age encryption secret key',
+  },
+
+  // PKCS#12 / PFX (Category 105)
+  {
+    name: 'PFX Password',
+    pattern: new RegExp("(?:PFX|PKCS12|P12)_PASSWORD['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9_!@#$%^&*-]{8,})", "gi"),
+    severity: 'critical',
+    description: 'PKCS#12/PFX certificate password in env/config assignment',
+  },
+
+  // Doppler (Category 106)
+  {
+    name: 'Doppler Service Token',
+    pattern: /dp\.st\.[a-zA-Z0-9_-]{20,}/g,
+    severity: 'critical',
+    description: 'Doppler service token',
+  },
+  {
+    name: 'Doppler CLI Token',
+    pattern: /dp\.ct\.[a-zA-Z0-9_-]{20,}/g,
+    severity: 'critical',
+    description: 'Doppler CLI token',
+  },
+  {
+    name: 'Doppler Project Token',
+    pattern: /dp\.pt\.[a-zA-Z0-9_-]{20,}/g,
+    severity: 'critical',
+    description: 'Doppler project token',
+  },
+
+  // 1Password (Category 107)
+  {
+    name: '1Password Service Account Token',
+    pattern: /ops_[a-zA-Z0-9+/=]{40,}/g,
+    severity: 'critical',
+    description: '1Password service account token',
+  },
+  {
+    name: '1Password Connect Token',
+    pattern: new RegExp("OP_CONNECT_TOKEN['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9_-]{20,})", "gi"),
+    severity: 'critical',
+    description: '1Password Connect token in env/config assignment',
+  },
+
+  // Infisical (Category 108)
+  {
+    name: 'Infisical Service Token',
+    pattern: /st\.[a-zA-Z0-9]{20,}\.[a-zA-Z0-9]{10,}/g,
+    severity: 'critical',
+    description: 'Infisical service token',
+  },
+  {
+    name: 'Infisical API Key',
+    pattern: new RegExp("(?:INFISICAL_API_KEY|INFISICAL_TOKEN)['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9_-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'Infisical API key or token in env/config assignment',
+  },
+
+  // HashiCorp Vault Expanded (Category 109)
+  {
+    name: 'Vault Batch Token',
+    pattern: /hvb\.[a-zA-Z0-9_-]{20,}/g,
+    severity: 'critical',
+    description: 'HashiCorp Vault batch token',
+  },
+  {
+    name: 'Vault Recovery Token',
+    pattern: /hvr\.[a-zA-Z0-9_-]{20,}/g,
+    severity: 'critical',
+    description: 'HashiCorp Vault recovery token',
+  },
+  {
+    name: 'Vault Token Assignment',
+    pattern: new RegExp("VAULT_TOKEN['\"]?\\s*[:=]\\s*['\"]?([a-zA-Z0-9._-]{20,})", "gi"),
+    severity: 'critical',
+    description: 'HashiCorp Vault token in env/config assignment',
+  },
 ];
 
