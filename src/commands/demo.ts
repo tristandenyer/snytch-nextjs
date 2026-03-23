@@ -275,6 +275,7 @@ const DIFF_OPTIONS: DiffOptions = {
   report: false,
   strict: false,
   serverOnly: ['STRIPE_SECRET_KEY'],
+  diffAliases: [],
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────

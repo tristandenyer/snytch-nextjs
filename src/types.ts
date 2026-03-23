@@ -98,6 +98,8 @@ export interface SuppressRule {
   surface?: FindingType;
   /** Substring match against `finding.patternName`. Omit to match all patterns. */
   pattern?: string;
+  /** Substring match against `finding.filePath`. Use to suppress a finding in one specific file rather than everywhere. Omit to match all files. */
+  filePath?: string;
   /** Required. Why this finding is being suppressed. Shown in the report. */
   reason: string;
   /**
@@ -118,6 +120,22 @@ export interface SnytchConfig {
   rca?: RcaConfig;
   /** Suppression rules — findings matched by a rule are excluded from CI gates. */
   suppress?: SuppressRule[];
+  /**
+   * Default env files for the `diff` command. When no `--env` flags are passed
+   * on the CLI, these paths are used instead.
+   *
+   * @example `['.env.local', '.env.production']`
+   */
+  diffFiles?: string[];
+  /**
+   * Alias groups for `diff` key matching. Each inner array lists key names
+   * that should be treated as the same logical variable when comparing
+   * across environments. The first element in each group is the canonical
+   * name used in the diff report.
+   *
+   * @example `[['STRIPE_SECRET_KEY', 'STRIPE_SECRET_KEY_TEST']]`
+   */
+  diffAliases?: string[][];
 }
 
 export interface ResolvedEnvVar {
@@ -193,6 +211,12 @@ export interface DiffOptions {
   strict: boolean;
   /** serverOnly key names loaded from snytch.config.js — used for non-strict exit logic. */
   serverOnly: string[];
+  /**
+   * Alias groups for key matching. Each inner array lists key names that
+   * should be treated as the same logical variable. The first element in
+   * each group is the canonical name used in the diff report.
+   */
+  diffAliases: string[][];
 }
 
 export interface DiffResult {
@@ -232,6 +256,8 @@ export interface AllOptions {
   strict: boolean;
   /** serverOnly key names from config. */
   serverOnly: string[];
+  /** Alias groups for diff key matching from config. */
+  diffAliases?: string[][];
   /** Build output directory. Defaults to `<projectRoot>/.next`. */
   dir: string;
 }

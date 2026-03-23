@@ -163,6 +163,93 @@ describe('diffEnvFiles — validation', () => {
   });
 });
 
+// ── Alias-aware diffing ──────────────────────────────────────────────────────
+
+describe('diffEnvFiles — alias groups', () => {
+  it('treats aliased keys as the same logical variable (in sync)', () => {
+    setup({
+      '/a/.env': 'STRIPE_SECRET_KEY_TEST=sk_test_xxx\n',
+      '/b/.env': 'STRIPE_SECRET_KEY=sk_live_xxx\n',
+    });
+    const aliases = [['STRIPE_SECRET_KEY', 'STRIPE_SECRET_KEY_TEST']];
+    const result = diffEnvFiles(files({ 'dev': '/a/.env', 'prod': '/b/.env' }), aliases);
+    expect(result.inSync).toEqual(['STRIPE_SECRET_KEY']);
+    expect(result.drift).toEqual([]);
+    expect(result.onlyInOne).toEqual([]);
+  });
+
+  it('uses the first element in the alias group as the canonical name', () => {
+    setup({
+      '/a/.env': 'DEV_DB_URL=postgres://dev\n',
+      '/b/.env': 'DATABASE_URL=postgres://prod\n',
+    });
+    const aliases = [['DATABASE_URL', 'DEV_DB_URL']];
+    const result = diffEnvFiles(files({ 'dev': '/a/.env', 'prod': '/b/.env' }), aliases);
+    expect(result.inSync).toEqual(['DATABASE_URL']);
+  });
+
+  it('reports drift using canonical name when alias is missing from a file', () => {
+    setup({
+      '/a/.env': 'STRIPE_KEY_TEST=sk_test_xxx\nFOO=1\n',
+      '/b/.env': 'FOO=2\n',
+    });
+    const aliases = [['STRIPE_KEY', 'STRIPE_KEY_TEST']];
+    const result = diffEnvFiles(files({ 'dev': '/a/.env', 'prod': '/b/.env' }), aliases);
+    expect(result.inSync).toEqual(['FOO']);
+    expect(result.onlyInOne).toEqual([{ key: 'STRIPE_KEY', file: 'dev' }]);
+  });
+
+  it('handles multiple alias groups independently', () => {
+    setup({
+      '/a/.env': 'DB_DEV=x\nSTRIPE_TEST=y\n',
+      '/b/.env': 'DATABASE_URL=x\nSTRIPE_KEY=y\n',
+    });
+    const aliases = [
+      ['DATABASE_URL', 'DB_DEV'],
+      ['STRIPE_KEY', 'STRIPE_TEST'],
+    ];
+    const result = diffEnvFiles(files({ 'dev': '/a/.env', 'prod': '/b/.env' }), aliases);
+    expect(result.inSync.sort()).toEqual(['DATABASE_URL', 'STRIPE_KEY']);
+    expect(result.drift).toEqual([]);
+    expect(result.onlyInOne).toEqual([]);
+  });
+
+  it('ignores alias groups with fewer than 2 entries', () => {
+    setup({
+      '/a/.env': 'FOO=1\n',
+      '/b/.env': 'FOO=2\n',
+    });
+    const aliases = [['SOLO']];
+    const result = diffEnvFiles(files({ 'a': '/a/.env', 'b': '/b/.env' }), aliases);
+    expect(result.inSync).toEqual(['FOO']);
+  });
+
+  it('works with no aliases (undefined)', () => {
+    setup({
+      '/a/.env': 'FOO=1\n',
+      '/b/.env': 'FOO=2\n',
+    });
+    const result = diffEnvFiles(files({ 'a': '/a/.env', 'b': '/b/.env' }), undefined);
+    expect(result.inSync).toEqual(['FOO']);
+  });
+
+  it('works across 3 files with mixed aliased and non-aliased keys', () => {
+    setup({
+      '/a/.env': 'API_KEY_DEV=x\nSHARED=1\n',
+      '/b/.env': 'API_KEY_STAGING=x\nSHARED=2\n',
+      '/c/.env': 'API_KEY=x\nSHARED=3\n',
+    });
+    const aliases = [['API_KEY', 'API_KEY_DEV', 'API_KEY_STAGING']];
+    const result = diffEnvFiles(
+      files({ 'dev': '/a/.env', 'staging': '/b/.env', 'prod': '/c/.env' }),
+      aliases,
+    );
+    expect(result.inSync.sort()).toEqual(['API_KEY', 'SHARED']);
+    expect(result.drift).toEqual([]);
+    expect(result.onlyInOne).toEqual([]);
+  });
+});
+
 // ── Result is sorted ────────────────────────────────────────────────────────
 
 describe('diffEnvFiles — sorted output', () => {

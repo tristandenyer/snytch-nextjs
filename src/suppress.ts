@@ -39,6 +39,7 @@ export function isRuleExpired(rule: SuppressRule, today: string): boolean {
  * A rule matches when ALL of the following are true:
  * - `rule.surface` is absent OR equals `finding.type`
  * - `rule.pattern` is absent OR is a substring of `finding.patternName`
+ * - `rule.filePath` is absent OR is a substring of `finding.filePath`
  *
  * Rules with an empty or missing `reason` never match (they are invalid).
  *
@@ -50,6 +51,7 @@ export function ruleMatchesFinding(rule: SuppressRule, finding: Finding): boolea
   if (!rule.reason || rule.reason.trim() === '') return false;
   if (rule.surface !== undefined && rule.surface !== finding.type) return false;
   if (rule.pattern !== undefined && !finding.patternName.includes(rule.pattern)) return false;
+  if (rule.filePath !== undefined && !finding.filePath.includes(rule.filePath)) return false;
   return true;
 }
 

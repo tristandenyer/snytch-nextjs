@@ -82,9 +82,11 @@ snytch check --env .env.local --report
 
 ### `snytch diff`
 
-Compare environment variable key presence across two or more `.env` files. "Drift" means a key exists in one environment but not another. This is how secrets get misconfigured in production: a key is added to `.env.local` during development and never makes it into `.env.production`, or a key is removed from one file but not the others.
+Compare environment variable key presence across two or more `.env` files to prevent production outages caused by missing variables. A developer adds a key to `.env.local`, the PR merges, and production breaks because nobody added the key there. `diff` catches that gap before deploy.
 
-`snytch diff` only compares key names, never values. It tells you what is missing or mismatched, not what the values are.
+It only compares key names, never values. It tells you what is missing, not what the values are. This is primarily a CI/CD tool: locally you typically only have one env file, but in a pipeline you can materialize multiple files from secrets and compare them.
+
+Key matching supports aliased and environment-specific naming conventions via `diffAliases` in `snytch.config.js`. If your dev environment uses `STRIPE_SECRET_KEY_TEST` and production uses `STRIPE_SECRET_KEY`, you can tell snytch they are the same logical variable. See [Configuration](#configuration) for details.
 
 ```bash
 # Compare two environments
@@ -97,12 +99,21 @@ snytch diff --env .env.staging --env .env.production --env .env.local
 snytch diff --env .env.staging --env .env.production --report --strict
 ```
 
-| Option     | Default  | Description                                                           |
-| ---------- | -------- | --------------------------------------------------------------------- |
-| `--env`    | required | Path to a `.env` file. Must be provided at least twice.               |
-| `--json`   | off      | Output results as JSON                                                |
-| `--report` | off      | Generate an HTML report at `./snytch-reports/snytch-diff-report.html` |
-| `--strict` | off      | Exit 1 for any drift, not just `serverOnly` keys                      |
+If you set `diffFiles` in `snytch.config.js`, you can skip the `--env` flags entirely:
+
+```bash
+# Uses the files listed in diffFiles config
+snytch diff
+```
+
+CLI `--env` flags always take priority over the config when both are present.
+
+| Option     | Default                    | Description                                                           |
+| ---------- | -------------------------- | --------------------------------------------------------------------- |
+| `--env`    | `diffFiles` from config    | Path to a `.env` file. Repeat for multiple files. Falls back to `diffFiles` in `snytch.config.js` when omitted. At least two files are required (from flags, config, or both). |
+| `--json`   | off                        | Output results as JSON                                                |
+| `--report` | off                        | Generate an HTML report at `./snytch-reports/snytch-diff-report.html` |
+| `--strict` | off                        | Exit 1 for any drift, not just `serverOnly` keys                      |
 
 ![Diff report showing environment variable drift across .env files, with keys that are missing or only present in one environment](https://raw.githubusercontent.com/tristandenyer/snytch-nextjs/main/docs/screenshots/snytch-diff-report.png)
 
@@ -161,7 +172,7 @@ Runs `scan`, `check`, and `diff` sequentially in a single invocation. Each sub-c
 snytch all [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none] [--graph] [--env .env.staging --env .env.production] [--strict]
 ```
 
-- `diff` only runs when two or more `--env` flags are provided.
+- `diff` runs when two or more env files are available, either from `--env` flags or from `diffFiles` in `snytch.config.js`.
 - Exit code is `1` if any sub-command errors or produces findings at the configured `--fail-on` threshold.
 - All other flags (`--json`, `--report`, `--graph`, `--strict`, `--ai-provider`, `--dir`) work the same as in individual commands.
 
@@ -348,6 +359,11 @@ Create `snytch.config.js` in your project root to customize snytch's behavior. T
 // snytch.config.js
 export default {
   serverOnly: ['DATABASE_URL', 'STRIPE_SECRET_KEY', 'NEXTAUTH_SECRET'],
+  diffFiles: ['.env.local', '.env.production'],
+  diffAliases: [
+    ['STRIPE_SECRET_KEY', 'STRIPE_SECRET_KEY_TEST'],
+    ['DATABASE_URL', 'DEV_DB_URL'],
+  ],
   failOn: 'critical',
   rca: {
     maxTokens: 2048,
@@ -359,6 +375,12 @@ export default {
       addedBy: '@alice',
       until: '2026-06-01',
     },
+    {
+      pattern: 'JWT Token',
+      filePath: 'chunks/auth',
+      reason: 'Auth module session token, confirmed safe. Other JWT findings remain active.',
+      addedBy: '@bob',
+    },
   ],
 };
 ```
@@ -366,6 +388,8 @@ export default {
 | Option          | Type                               | Description                                                                                 |
 | --------------- | ---------------------------------- | ------------------------------------------------------------------------------------------- |
 | `serverOnly`    | `string[]`                         | Variable names that must never be exposed to the client                                     |
+| `diffFiles`     | `string[]`                         | Default env files for `snytch diff`. When set, `diff` and `all` use these files automatically without `--env` flags. CLI flags override this when provided. |
+| `diffAliases`   | `string[][]`                       | Alias groups for diff key matching. Each inner array lists key names that should be treated as the same logical variable. The first name in each group is the canonical name used in reports. Example: `[['STRIPE_SECRET_KEY', 'STRIPE_SECRET_KEY_TEST']]`. |
 | `failOn`        | `'critical' \| 'warning' \| 'all'` | Default exit code threshold for all commands                                                |
 | `rca.maxTokens` | `number`                           | Max tokens for AI RCA responses (default: 2048). Increase if responses are being truncated. |
 | `suppress`      | `SuppressRule[]`                   | Rules to silence known-safe findings. See [Suppression rules](#suppression-rules) below.    |
@@ -382,13 +406,16 @@ When `serverOnly` is set:
 
 Each entry in the `suppress` array supports the following fields:
 
-| Field     | Required | Description                                                                                                                                         |
-| --------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `reason`  | yes      | Why this finding is being suppressed. Shown in the report and terminal output.                                                                      |
-| `pattern` | no       | Substring match against the finding's pattern name. Omit to match all patterns.                                                                     |
-| `surface` | no       | Limit to a specific scan surface: `pattern-match`, `next-data`, `config-env`, `middleware-secret`, `sourcemap-secret`.                              |
-| `addedBy` | no       | The person who added this rule: a name, username, or email. Shown in the report so others know who to ask about it.                                |
-| `until`   | no       | ISO-8601 expiry date (`"YYYY-MM-DD"`). The rule stops suppressing findings on this date and appears as a warning in the report and terminal output. |
+| Field      | Required | Description                                                                                                                                         |
+| ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reason`   | yes      | Why this finding is being suppressed. Shown in the report and terminal output.                                                                      |
+| `pattern`  | no       | Substring match against the finding's pattern name. Omit to match all patterns.                                                                     |
+| `filePath` | no       | Substring match against the finding's file path. Use this to suppress a finding in one specific file rather than everywhere. Omit to match all files. |
+| `surface`  | no       | Limit to a specific scan surface: `pattern-match`, `next-data`, `config-env`, `middleware-secret`, `sourcemap-secret`.                              |
+| `addedBy`  | no       | The person who added this rule: a name, username, or email. Shown in the report so others know who to ask about it.                                |
+| `until`    | no       | ISO-8601 expiry date (`"YYYY-MM-DD"`). The rule stops suppressing findings on this date and appears as a warning in the report and terminal output. |
+
+All fields are AND-matched: a rule with both `pattern` and `filePath` only suppresses findings that match both. This lets you target a specific finding in a specific file without suppressing every instance across the project.
 
 Rules with an expired `until` date are never silently dropped. They surface as warnings so your team knows to remove or extend them.
 
@@ -414,6 +441,13 @@ To also check environment drift across your `.env` files, add:
 ```yaml
 - name: Diff env files
   run: npx @snytch/nextjs diff --env .env.staging --env .env.production
+```
+
+If you have `diffFiles` set in `snytch.config.js`, you can simplify this to:
+
+```yaml
+- name: Diff env files
+  run: npx @snytch/nextjs diff
 ```
 
 > [!WARNING]

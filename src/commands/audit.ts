@@ -90,6 +90,7 @@ export async function runAll(options: AllOptions): Promise<AllResult> {
       report: options.report,
       strict: options.strict,
       serverOnly,
+      diffAliases: options.diffAliases ?? [],
     };
 
     try {

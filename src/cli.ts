@@ -29,6 +29,9 @@ async function main() {
     console.error('  snytch check [--env .env.local] [--json] [--report] [--fail-on critical|warning|all]');
     console.error('  snytch diff --env .env.staging --env .env.production [--json] [--report] [--strict]');
     console.error('  snytch all [options]   Run scan + check + diff sequentially');
+    console.error('');
+    console.error('  Set diffFiles in snytch.config.js to avoid repeating --env flags:');
+    console.error('    module.exports = { diffFiles: [".env.local", ".env.production"] }');
     console.error('  snytch demo');
     console.error('  snytch mcp');
     console.error('');
@@ -107,20 +110,28 @@ async function main() {
       process.exit(shouldFail ? 1 : 0);
 
     } else if (command === 'diff') {
-      if (envFiles.length < 2) {
-        console.error('Error: snytch diff requires at least two --env flags.');
-        console.error('  Example: snytch diff --env .env.staging --env .env.production');
-        process.exit(1);
-      }
-
-      // Load serverOnly list from config for non-strict exit logic
+      // Load config for serverOnly and diffFiles fallback
       const config = loadConfig(projectRoot);
       const serverOnly = config?.serverOnly ?? [];
+
+      // Fall back to config.diffFiles when no --env flags were passed
+      if (envFiles.length === 0 && config?.diffFiles && config.diffFiles.length > 0) {
+        envFiles.push(...config.diffFiles);
+      }
+
+      if (envFiles.length < 2) {
+        console.error('Error: snytch diff requires at least two env files.');
+        console.error('  Pass --env flags or set diffFiles in snytch.config.js.');
+        console.error('  Example: snytch diff --env .env.local --env .env.production');
+        process.exit(1);
+      }
 
       const resolvedFiles = envFiles.map((p) => ({
         path: resolve(p),
         label: basename(p),
       }));
+
+      const diffAliases = config?.diffAliases ?? [];
 
       const options: DiffOptions = {
         envFiles: resolvedFiles,
@@ -129,6 +140,7 @@ async function main() {
         report,
         strict,
         serverOnly,
+        diffAliases,
       };
 
       const result = await diff(options);
@@ -154,6 +166,13 @@ async function main() {
       const config = loadConfig(projectRoot);
       const serverOnly = config?.serverOnly ?? [];
 
+      // Fall back to config.diffFiles when no --env flags were passed
+      const resolvedEnvFiles = envFiles.length > 0
+        ? envFiles
+        : config?.diffFiles && config.diffFiles.length > 0
+          ? config.diffFiles
+          : undefined;
+
       const allOptions: AllOptions = {
         projectRoot,
         json,
@@ -162,9 +181,10 @@ async function main() {
         aiProvider,
         rcaMaxTokens: config?.rca?.maxTokens,
         graph,
-        envFiles: envFiles.length > 0 ? envFiles : undefined,
+        envFiles: resolvedEnvFiles,
         strict,
         serverOnly,
+        diffAliases: config?.diffAliases ?? [],
         dir,
       };
 
@@ -195,7 +215,7 @@ async function main() {
       }
 
       if (result.diff) {
-        const resolvedFiles = envFiles.map((p) => ({
+        const resolvedFiles = (resolvedEnvFiles ?? []).map((p) => ({
           path: resolve(p),
           label: basename(p),
         }));
@@ -206,6 +226,7 @@ async function main() {
           report,
           strict,
           serverOnly,
+          diffAliases: config?.diffAliases ?? [],
         });
       }
 

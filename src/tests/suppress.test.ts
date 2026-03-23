@@ -94,6 +94,64 @@ describe('ruleMatchesFinding', () => {
     ).toBe(false);
   });
 
+  it('matches when filePath is a substring of finding.filePath', () => {
+    const rule: SuppressRule = { filePath: 'chunks/auth', reason: 'ok' };
+    expect(
+      ruleMatchesFinding(
+        rule,
+        makeFinding({ filePath: '/project/.next/static/chunks/auth-abc123.js' }),
+      ),
+    ).toBe(true);
+  });
+
+  it('does not match when filePath is not a substring of finding.filePath', () => {
+    const rule: SuppressRule = { filePath: 'chunks/payments', reason: 'ok' };
+    expect(
+      ruleMatchesFinding(
+        rule,
+        makeFinding({ filePath: '/project/.next/static/chunks/auth-abc123.js' }),
+      ),
+    ).toBe(false);
+  });
+
+  it('matches when surface, pattern, and filePath all match', () => {
+    const rule: SuppressRule = {
+      surface: 'pattern-match',
+      pattern: 'JWT',
+      filePath: 'chunks/auth',
+      reason: 'ok',
+    };
+    expect(
+      ruleMatchesFinding(
+        rule,
+        makeFinding({
+          type: 'pattern-match',
+          patternName: 'JWT Token',
+          filePath: '/project/.next/static/chunks/auth-abc123.js',
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it('does not match when surface and pattern match but filePath does not', () => {
+    const rule: SuppressRule = {
+      surface: 'pattern-match',
+      pattern: 'JWT',
+      filePath: 'chunks/payments',
+      reason: 'ok',
+    };
+    expect(
+      ruleMatchesFinding(
+        rule,
+        makeFinding({
+          type: 'pattern-match',
+          patternName: 'JWT Token',
+          filePath: '/project/.next/static/chunks/auth-abc123.js',
+        }),
+      ),
+    ).toBe(false);
+  });
+
   it('does not match when reason is empty string', () => {
     const rule: SuppressRule = { reason: '' };
     expect(ruleMatchesFinding(rule, makeFinding())).toBe(false);
@@ -217,6 +275,27 @@ describe('applySuppressions', () => {
     expect(result.suppressed[0].finding).toBe(nextDataFinding);
     expect(result.expiredRules).toHaveLength(1);
     expect(result.expiredRules[0].reason).toBe('old blanket suppression');
+  });
+
+  it('suppresses only the finding in the targeted file when filePath is set', () => {
+    const authFinding = makeFinding({
+      patternName: 'JWT Token',
+      filePath: '/project/.next/static/chunks/auth-abc123.js',
+    });
+    const paymentsFinding = makeFinding({
+      patternName: 'JWT Token',
+      filePath: '/project/.next/static/chunks/payments-def456.js',
+    });
+    const rule: SuppressRule = {
+      pattern: 'JWT',
+      filePath: 'chunks/auth',
+      reason: 'Internal session token in auth module',
+    };
+    const result = applySuppressions([authFinding, paymentsFinding], [rule], TODAY);
+    expect(result.suppressed).toHaveLength(1);
+    expect(result.suppressed[0].finding).toBe(authFinding);
+    expect(result.active).toHaveLength(1);
+    expect(result.active[0]).toBe(paymentsFinding);
   });
 
   it('does not mutate the input findings array', () => {

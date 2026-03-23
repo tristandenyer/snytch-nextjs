@@ -13,7 +13,7 @@ import { DiffOptions, DiffResult } from '../types.js';
 export async function diff(options: DiffOptions): Promise<DiffResult> {
   const start = Date.now();
 
-  const raw = diffEnvFiles(options.envFiles);
+  const raw = diffEnvFiles(options.envFiles, options.diffAliases);
 
   return {
     fileLabels: options.envFiles.map((f) => f.label),

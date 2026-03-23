@@ -25,6 +25,7 @@ function makeOptions(overrides: Partial<DiffOptions> = {}): DiffOptions {
     report: false,
     strict: false,
     serverOnly: [],
+    diffAliases: [],
     ...overrides,
   };
 }
@@ -36,10 +37,13 @@ describe('diff command', () => {
     await diff(makeOptions());
 
     expect(mockDiffEnvFiles).toHaveBeenCalledOnce();
-    expect(mockDiffEnvFiles).toHaveBeenCalledWith([
-      { path: '/a/.env.staging', label: '.env.staging' },
-      { path: '/b/.env.production', label: '.env.production' },
-    ]);
+    expect(mockDiffEnvFiles).toHaveBeenCalledWith(
+      [
+        { path: '/a/.env.staging', label: '.env.staging' },
+        { path: '/b/.env.production', label: '.env.production' },
+      ],
+      [],
+    );
   });
 
   it('returns fileLabels matching the input order', async () => {
