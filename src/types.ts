@@ -78,6 +78,14 @@ export interface ScanOptions {
 }
 
 export interface RcaConfig {
+  /**
+   * Enable AI root cause analysis. Must be explicitly set to `true` for RCA
+   * to run. When omitted or `false`, no API calls are made and no tokens are
+   * consumed, even if an API key is present in the environment.
+   */
+  enabled?: boolean;
+  /** AI provider to use: `'anthropic'` (Claude) or `'openai'` (GPT-4o). Defaults to `'anthropic'`. */
+  provider?: AiProvider;
   /** Maximum tokens for the AI RCA response. Defaults to 2048. */
   maxTokens?: number;
 }

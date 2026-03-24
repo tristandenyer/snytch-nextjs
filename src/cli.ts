@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { cwd } from 'process';
-import { resolve, basename } from 'path';
+import { resolve, basename, join } from 'path';
+import { readFileSync } from 'fs';
 import { scan } from './commands/scan.js';
 import { check } from './commands/check.js';
 import { diff } from './commands/diff.js';
@@ -11,6 +12,49 @@ import { startMcpServer } from './mcp.js';
 import { printScanResult, printCheckResult, printDiffResult } from './output.js';
 import { ScanOptions, CheckOptions, DiffOptions, AllOptions, FailOn, AiProvider } from './types.js';
 import { loadConfig } from './config.js';
+import { parseEnvFileContent } from './parser.js';
+
+/** AI-related env var names that snytch reads from the environment. */
+const AI_KEY_NAMES = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY'];
+
+/**
+ * Load AI API keys from `.env` and `.env.local` into `process.env`.
+ *
+ * Only sets a key if it is not already present in the environment (shell
+ * env always takes priority). `.env.local` is read after `.env`, so its
+ * values win when both files define the same key.
+ *
+ * This is intentionally limited to AI keys. snytch does not load the full
+ * `.env` file into the process, which would risk masking real env vars.
+ *
+ * @param projectRoot - Absolute path to the project root directory.
+ */
+function loadAiKeysFromEnv(projectRoot: string): void {
+  const candidates = ['.env', '.env.local'];
+  const found = new Map<string, string>();
+
+  for (const filename of candidates) {
+    let content: string;
+    try {
+      content = readFileSync(join(projectRoot, filename), 'utf-8');
+    } catch {
+      continue; // file doesn't exist — expected
+    }
+
+    const entries = parseEnvFileContent(content, filename);
+    for (const entry of entries) {
+      if (AI_KEY_NAMES.includes(entry.key)) {
+        found.set(entry.key, entry.value);
+      }
+    }
+  }
+
+  for (const [key, value] of found) {
+    if (!process.env[key]) {
+      process.env[key] = value;
+    }
+  }
+}
 
 function parseFailOn(args: string[], i: number): FailOn {
   const val = args[i + 1];
@@ -22,6 +66,9 @@ async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
   const projectRoot = cwd();
+
+  // Load AI API keys from .env / .env.local so users don't need to export them
+  loadAiKeysFromEnv(projectRoot);
 
   if (!command || !['scan', 'check', 'diff', 'all', 'mcp', 'demo'].includes(command)) {
     console.error('Usage:');
@@ -46,7 +93,7 @@ async function main() {
   let strict = false;
   let graph = false;
   let failOn: FailOn = 'critical';
-  let aiProvider: AiProvider = 'anthropic';
+  let aiProvider: AiProvider | undefined;
   let dir = projectRoot + '/.next';
   const envFiles: string[] = [];
 
@@ -81,8 +128,12 @@ async function main() {
   try {
     if (command === 'scan') {
       const config = loadConfig(projectRoot);
+      const rcaEnabled = config?.rca?.enabled === true;
+      const resolvedAiProvider: AiProvider = rcaEnabled
+        ? (aiProvider ?? config?.rca?.provider ?? 'anthropic')
+        : 'none';
       const rcaMaxTokens = config?.rca?.maxTokens;
-      const options: ScanOptions = { dir, projectRoot, json, report, failOn, aiProvider, rcaMaxTokens, graph };
+      const options: ScanOptions = { dir, projectRoot, json, report, failOn, aiProvider: resolvedAiProvider, rcaMaxTokens, graph };
       const result = await scan(options);
       printScanResult(result, options);
 
@@ -173,12 +224,17 @@ async function main() {
           ? config.diffFiles
           : undefined;
 
+      const rcaEnabled = config?.rca?.enabled === true;
+      const resolvedAiProvider: AiProvider = rcaEnabled
+        ? (aiProvider ?? config?.rca?.provider ?? 'anthropic')
+        : 'none';
+
       const allOptions: AllOptions = {
         projectRoot,
         json,
         report,
         failOn,
-        aiProvider,
+        aiProvider: resolvedAiProvider,
         rcaMaxTokens: config?.rca?.maxTokens,
         graph,
         envFiles: resolvedEnvFiles,
@@ -198,7 +254,7 @@ async function main() {
           json,
           report,
           failOn,
-          aiProvider,
+          aiProvider: resolvedAiProvider,
           rcaMaxTokens: config?.rca?.maxTokens,
           graph,
         });
