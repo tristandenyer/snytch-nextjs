@@ -91,7 +91,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
   }
 
   // Pass 2: value matching against serverOnly vars from snytch.config.js
-  const config = loadConfig(options.projectRoot);
+  const config = await loadConfig(options.projectRoot);
   if (config?.serverOnly && config.serverOnly.length > 0) {
     const resolvedVars = resolveEnvVars(options.projectRoot, config.serverOnly);
 

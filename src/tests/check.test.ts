@@ -11,12 +11,12 @@ vi.mock('fs', async () => {
   return createFsFromVolume(vol);
 });
 
-// Mock loadConfig so we can control serverOnly without needing real require()
+// Mock loadConfig so we can control serverOnly without needing real import()
 vi.mock('../config.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('../config.js')>();
   return {
     ...original,
-    loadConfig: vi.fn(() => null),
+    loadConfig: vi.fn(async () => null),
   };
 });
 
@@ -42,7 +42,7 @@ beforeEach(() => {
   getVol().reset();
   getVol().mkdirSync('/project', { recursive: true });
   // Default: no config
-  vi.mocked(loadConfig).mockReturnValue(null);
+  vi.mocked(loadConfig).mockResolvedValue(null);
 });
 
 // ── no findings ───────────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ describe('check — pattern-match findings', () => {
 describe('check — serverOnly findings', () => {
   it('flags NEXT_PUBLIC_ var listed in serverOnly config', async () => {
     getVol().writeFileSync('/project/.env.local', 'NEXT_PUBLIC_MY_SECRET=somevalue123\n');
-    vi.mocked(loadConfig).mockReturnValue({ serverOnly: ['NEXT_PUBLIC_MY_SECRET'] });
+    vi.mocked(loadConfig).mockResolvedValue({ serverOnly: ['NEXT_PUBLIC_MY_SECRET'] });
     const result = await check(makeOptions());
     const f = result.findings.find((f) => f.reason === 'serverOnly');
     expect(f).toBeDefined();
@@ -132,7 +132,7 @@ describe('check — serverOnly findings', () => {
 
   it('does not flag non-NEXT_PUBLIC_ serverOnly vars', async () => {
     getVol().writeFileSync('/project/.env.local', 'MY_SECRET=somevalue123\n');
-    vi.mocked(loadConfig).mockReturnValue({ serverOnly: ['MY_SECRET'] });
+    vi.mocked(loadConfig).mockResolvedValue({ serverOnly: ['MY_SECRET'] });
     const result = await check(makeOptions());
     expect(result.findings.filter((f) => f.reason === 'serverOnly')).toHaveLength(0);
   });

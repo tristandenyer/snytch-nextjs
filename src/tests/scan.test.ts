@@ -261,14 +261,14 @@ describe('scan — resolveEnvVars', () => {
 // ── config loading ────────────────────────────────────────────────────────────
 
 describe('scan — config loading', () => {
-  it('returns null when config file is absent', () => {
+  it('returns null when config file is absent', async () => {
     getVol().mkdirSync('/project', { recursive: true });
-    const config = loadConfig('/project');
+    const config = await loadConfig('/project');
     expect(config).toBeNull();
   });
 
-  it('does not throw when config file is absent', () => {
+  it('does not throw when config file is absent', async () => {
     getVol().mkdirSync('/project', { recursive: true });
-    expect(() => loadConfig('/project')).not.toThrow();
+    await expect(loadConfig('/project')).resolves.not.toThrow();
   });
 });

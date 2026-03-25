@@ -53,7 +53,7 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
   const allFindings = [];
   let scannedFiles = 0;
 
-  const config = loadConfig(options.projectRoot);
+  const config = await loadConfig(options.projectRoot);
   const serverOnlySet = new Set<string>(config?.serverOnly ?? []);
 
   for (const { absPath, label } of resolveEnvFiles(options)) {

@@ -1,19 +1,20 @@
-import { createRequire } from 'module';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { pathToFileURL } from 'url';
 import { SnytchConfig, ResolvedEnvVar } from './types.js';
 
 /**
  * Load snytch.config.js from projectRoot. Returns null if not found or invalid.
  * Never throws.
  */
-export function loadConfig(projectRoot: string): SnytchConfig | null {
+export async function loadConfig(projectRoot: string): Promise<SnytchConfig | null> {
   const configPath = join(projectRoot, 'snytch.config.js');
   if (!existsSync(configPath)) return null;
 
   try {
-    const require = createRequire(import.meta.url);
-    const config = require(configPath) as unknown;
+    const moduleUrl = pathToFileURL(configPath).href;
+    const mod = (await import(moduleUrl)) as { default?: unknown };
+    const config = mod.default ?? mod;
     if (typeof config !== 'object' || config === null) return null;
     return config as SnytchConfig;
   } catch {

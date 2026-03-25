@@ -127,7 +127,7 @@ async function main() {
 
   try {
     if (command === 'scan') {
-      const config = loadConfig(projectRoot);
+      const config = await loadConfig(projectRoot);
       const rcaEnabled = config?.rca?.enabled === true;
       const resolvedAiProvider: AiProvider = rcaEnabled
         ? (aiProvider ?? config?.rca?.provider ?? 'anthropic')
@@ -162,7 +162,7 @@ async function main() {
 
     } else if (command === 'diff') {
       // Load config for serverOnly and diffFiles fallback
-      const config = loadConfig(projectRoot);
+      const config = await loadConfig(projectRoot);
       const serverOnly = config?.serverOnly ?? [];
 
       // Fall back to config.diffFiles when no --env flags were passed
@@ -214,7 +214,7 @@ async function main() {
       process.exit(shouldFail ? 1 : 0);
 
     } else if (command === 'all') {
-      const config = loadConfig(projectRoot);
+      const config = await loadConfig(projectRoot);
       const serverOnly = config?.serverOnly ?? [];
 
       // Fall back to config.diffFiles when no --env flags were passed
