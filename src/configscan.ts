@@ -106,7 +106,7 @@ function extractEnvBlock(content: string): EnvBlockEntry[] {
  *
  * Two passes are run against each key-value pair in the `env` block:
  * 1. Pattern matching — value matched against the 170+ regex pattern library.
- * 2. Value matching — key checked against the `serverOnly` list in snytch.config.js.
+ * 2. Value matching — key checked against the `serverOnly` list in snytch.config.json.
  *
  * @param projectRoot - Absolute path to the project root directory.
  * @param config - Snytch configuration (used for serverOnly list).

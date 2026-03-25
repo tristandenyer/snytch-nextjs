@@ -46,7 +46,7 @@ function isClientEntry(filePath: string): boolean {
  * variable name appears as a path segment or file stem, we flag it.
  *
  * @param modulePath - The module path to test.
- * @param serverOnlyNames - Variable names from `snytch.config.js` `serverOnly`.
+ * @param serverOnlyNames - Variable names from `snytch.config.json` `serverOnly`.
  * @returns True if the module looks server-only.
  */
 function isServerOnlyModule(modulePath: string, serverOnlyNames: string[]): boolean {

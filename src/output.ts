@@ -301,7 +301,13 @@ export function printCheckResult(
   options: CheckOptions,
 ): void {
   if (options.json) {
-    console.log(JSON.stringify({ scannedFiles: result.scannedFiles, findings: result.findings, durationMs: result.durationMs }, null, 2));
+    console.log(JSON.stringify({
+      scannedFiles: result.scannedFiles,
+      findings: result.findings,
+      suppressedFindings: result.suppressedFindings,
+      expiredRules: result.expiredRules,
+      durationMs: result.durationMs,
+    }, null, 2));
     return;
   }
 
@@ -340,6 +346,11 @@ export function printCheckResult(
   }
 
   console.log('');
+  printSuppressionSummary(
+    result.suppressedFindings.length,
+    result.expiredRules,
+    options.report ?? false,
+  );
   if (options.report) {
     generateCheckReport(result, options);
   }

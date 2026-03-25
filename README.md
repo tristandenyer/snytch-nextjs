@@ -43,7 +43,7 @@ Then add these scripts to your `package.json`:
 
 Now you can run `npm run snytch` to scan, check, and diff in one shot, or run each command individually.
 
-Optionally, [create a snytch.config.js file](#configuration) in your project root to customize behavior: set server-only variable names, default diff files, suppression rules, and more.
+Optionally, [create a snytch.config.json file](#configuration) in your project root to customize behavior: set server-only variable names, default diff files, suppression rules, and more.
 
 And the AI RCA will require a key. See [AI Root Cause Analysis](#ai-root-cause-analysis) for setup.
 
@@ -115,7 +115,7 @@ Detect environment variable drift across two or more `.env` files to prevent pro
 
 It only compares key names, never values. It tells you what is missing, not what the values are. This is primarily a CI/CD tool: locally you typically only have one env file, but in a pipeline you can materialize multiple files from secrets and compare them.
 
-Key matching supports aliased and environment-specific naming conventions via `diffAliases` in `snytch.config.js`. If your dev environment uses `STRIPE_SECRET_KEY_TEST` and production uses `STRIPE_SECRET_KEY`, you can tell snytch they are the same logical variable. See [Configuration](#configuration) for details.
+Key matching supports aliased and environment-specific naming conventions via `diffAliases` in `snytch.config.json`. If your dev environment uses `STRIPE_SECRET_KEY_TEST` and production uses `STRIPE_SECRET_KEY`, you can tell snytch they are the same logical variable. See [Configuration](#configuration) for details.
 
 ```bash
 # Compare two environments
@@ -128,7 +128,7 @@ snytch diff --env .env.staging --env .env.production --env .env.local
 snytch diff --env .env.staging --env .env.production --report --strict
 ```
 
-If you set `diffFiles` in `snytch.config.js`, you can skip the `--env` flags entirely:
+If you set `diffFiles` in `snytch.config.json`, you can skip the `--env` flags entirely:
 
 ```bash
 # Uses the files listed in diffFiles config
@@ -143,7 +143,7 @@ CLI `--env` flags always take priority over the config when both are present.
 
 | Option     | Default                 | Description                                                                                                                                                                    |
 | ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--env`    | `diffFiles` from config | Path to a `.env` file. Repeat for multiple files. Falls back to `diffFiles` in `snytch.config.js` when omitted. At least two files are required (from flags, config, or both). |
+| `--env`    | `diffFiles` from config | Path to a `.env` file. Repeat for multiple files. Falls back to `diffFiles` in `snytch.config.json` when omitted. At least two files are required (from flags, config, or both). |
 | `--json`   | off                     | Output results as JSON                                                                                                                                                         |
 | `--report` | off                     | Generate an HTML report at `./snytch-reports/snytch-diff-report.html`                                                                                                          |
 | `--strict` | off                     | Exit 1 for any drift, not just `serverOnly` keys                                                                                                                               |
@@ -218,7 +218,7 @@ Runs `scan`, `check`, and `diff` sequentially in a single invocation. Each sub-c
 snytch all [--dir ./.next] [--json] [--report] [--fail-on critical|warning|all] [--ai-provider anthropic|openai|none] [--graph] [--env .env.staging --env .env.production] [--strict]
 ```
 
-- `diff` runs when two or more env files are available, either from `--env` flags or from `diffFiles` in `snytch.config.js`.
+- `diff` runs when two or more env files are available, either from `--env` flags or from `diffFiles` in `snytch.config.json`.
 - Exit code is `1` if any sub-command errors or produces findings at the configured `--fail-on` threshold.
 - All other flags (`--json`, `--report`, `--graph`, `--strict`, `--ai-provider`, `--dir`) work the same as in individual commands.
 
@@ -271,14 +271,13 @@ RCA is **opt-in**. No API calls are made and no tokens are consumed unless you e
 
 **Step 1: Enable RCA in your config**
 
-```js
-// snytch.config.js
-export default {
-  rca: {
-    enabled: true, // required: opt in to AI analysis
-    provider: 'anthropic', // optional: 'anthropic' (default) or 'openai'
-  },
-};
+```json
+{
+  "rca": {
+    "enabled": true,
+    "provider": "anthropic"
+  }
+}
 ```
 
 **Step 2: Add your API key**
@@ -476,38 +475,37 @@ The MCP server runs in the directory where your editor is opened, so it automati
 
 ## Configuration
 
-Create `snytch.config.js` in your project root to customize snytch's behavior. The file must use ESM syntax since `@snytch/nextjs` is an ESM package.
+Create `snytch.config.json` in your project root to customize snytch's behavior.
 
-```js
-// snytch.config.js
-export default {
-  serverOnly: ['DATABASE_URL', 'STRIPE_SECRET_KEY', 'NEXTAUTH_SECRET'],
-  diffFiles: ['.env.local', '.env.production'],
-  diffAliases: [
-    ['STRIPE_SECRET_KEY', 'STRIPE_SECRET_KEY_TEST'],
-    ['DATABASE_URL', 'DEV_DB_URL'],
+```json
+{
+  "serverOnly": ["DATABASE_URL", "STRIPE_SECRET_KEY", "NEXTAUTH_SECRET"],
+  "diffFiles": [".env.local", ".env.production"],
+  "diffAliases": [
+    ["STRIPE_SECRET_KEY", "STRIPE_SECRET_KEY_TEST"],
+    ["DATABASE_URL", "DEV_DB_URL"]
   ],
-  failOn: 'critical',
-  rca: {
-    enabled: true,
-    provider: 'anthropic',
-    maxTokens: 2048,
+  "failOn": "critical",
+  "rca": {
+    "enabled": true,
+    "provider": "anthropic",
+    "maxTokens": 2048
   },
-  suppress: [
+  "suppress": [
     {
-      pattern: 'JWT Token',
-      reason: 'Internal session token, not a credential. Reviewed 2026-03-21',
-      addedBy: '@alice',
-      until: '2026-06-01',
+      "pattern": "JWT Token",
+      "reason": "Internal session token, not a credential. Reviewed 2026-03-21",
+      "addedBy": "@alice",
+      "until": "2026-06-01"
     },
     {
-      pattern: 'JWT Token',
-      filePath: 'chunks/auth',
-      reason: 'Auth module session token, confirmed safe. Other JWT findings remain active.',
-      addedBy: '@bob',
-    },
-  ],
-};
+      "pattern": "JWT Token",
+      "filePath": "chunks/auth",
+      "reason": "Auth module session token, confirmed safe. Other JWT findings remain active.",
+      "addedBy": "@bob"
+    }
+  ]
+}
 ```
 
 | Option          | Type                               | Description                                                                                                                                                                                                                                                 |
@@ -566,7 +564,7 @@ To also check environment drift across your `.env` files, add:
   run: npx @snytch/nextjs diff --env .env.staging --env .env.production
 ```
 
-If you have `diffFiles` set in `snytch.config.js`, you can simplify this to:
+If you have `diffFiles` set in `snytch.config.json`, you can simplify this to:
 
 ```yaml
 - name: Diff env files

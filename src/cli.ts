@@ -77,7 +77,7 @@ async function main() {
     console.error('  snytch diff --env .env.staging --env .env.production [--json] [--report] [--strict]');
     console.error('  snytch all [options]   Run scan + check + diff sequentially');
     console.error('');
-    console.error('  Set diffFiles in snytch.config.js to avoid repeating --env flags:');
+    console.error('  Set diffFiles in snytch.config.json to avoid repeating --env flags:');
     console.error('    module.exports = { diffFiles: [".env.local", ".env.production"] }');
     console.error('  snytch demo');
     console.error('  snytch mcp');
@@ -127,7 +127,7 @@ async function main() {
 
   try {
     if (command === 'scan') {
-      const config = await loadConfig(projectRoot);
+      const config = loadConfig(projectRoot);
       const rcaEnabled = config?.rca?.enabled === true;
       const resolvedAiProvider: AiProvider = rcaEnabled
         ? (aiProvider ?? config?.rca?.provider ?? 'anthropic')
@@ -162,7 +162,7 @@ async function main() {
 
     } else if (command === 'diff') {
       // Load config for serverOnly and diffFiles fallback
-      const config = await loadConfig(projectRoot);
+      const config = loadConfig(projectRoot);
       const serverOnly = config?.serverOnly ?? [];
 
       // Fall back to config.diffFiles when no --env flags were passed
@@ -172,7 +172,7 @@ async function main() {
 
       if (envFiles.length < 2) {
         console.error('Error: snytch diff requires at least two env files.');
-        console.error('  Pass --env flags or set diffFiles in snytch.config.js.');
+        console.error('  Pass --env flags or set diffFiles in snytch.config.json.');
         console.error('  Example: snytch diff --env .env.local --env .env.production');
         process.exit(1);
       }
@@ -214,7 +214,7 @@ async function main() {
       process.exit(shouldFail ? 1 : 0);
 
     } else if (command === 'all') {
-      const config = await loadConfig(projectRoot);
+      const config = loadConfig(projectRoot);
       const serverOnly = config?.serverOnly ?? [];
 
       // Fall back to config.diffFiles when no --env flags were passed

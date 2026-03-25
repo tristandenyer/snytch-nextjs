@@ -1334,6 +1334,24 @@ describe('Vault Token Assignment', () => {
 
 // ── Pattern count sanity check ────────────────────────────────────────────────
 
+describe('Airtable API Key', () => {
+  it('matches standalone Airtable key', () => {
+    expect(matches('Airtable API Key', '"key' + 'AbCdEfGhIjKlMnOpQ' + '"')).toBe(true);
+  });
+  it('matches key after delimiter', () => {
+    expect(matches('Airtable API Key', '=key' + 'AbCdEfGhIjKlMnOpQ' + '\n')).toBe(true);
+  });
+  it('does not match camelCase JS identifiers like keySystemNoSession', () => {
+    expect(matches('Airtable API Key', 'keySystemNoSession')).toBe(false);
+  });
+  it('does not match longer JS identifiers like keyIdToKeySessionPromise', () => {
+    expect(matches('Airtable API Key', 'keyIdToKeySessionP')).toBe(false);
+  });
+  it('does not match key embedded in longer identifier', () => {
+    expect(matches('Airtable API Key', 'mykey' + 'AbCdEfGhIjKlMnOpQ')).toBe(false);
+  });
+});
+
 describe('PATTERNS array', () => {
   it('contains at least 50 patterns', () => {
     expect(PATTERNS.length).toBeGreaterThanOrEqual(50);

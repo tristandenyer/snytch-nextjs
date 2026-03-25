@@ -3,6 +3,7 @@ import { basename, join } from 'path';
 import { loadConfig } from '../config.js';
 import { parseEnvFileContent } from '../parser.js';
 import { applyCheckRules } from '../rules.js';
+import { applyCheckSuppressions } from '../suppress.js';
 import { CheckOptions, CheckResult } from '../types.js';
 
 /**
@@ -53,7 +54,7 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
   const allFindings = [];
   let scannedFiles = 0;
 
-  const config = await loadConfig(options.projectRoot);
+  const config = loadConfig(options.projectRoot);
   const serverOnlySet = new Set<string>(config?.serverOnly ?? []);
 
   for (const { absPath, label } of resolveEnvFiles(options)) {
@@ -74,9 +75,15 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
     }
   }
 
+  const suppressRules = config?.suppress ?? [];
+  const today = new Date().toISOString().slice(0, 10);
+  const { active, suppressed, expiredRules } = applyCheckSuppressions(allFindings, suppressRules, today);
+
   return {
     scannedFiles,
-    findings: allFindings,
+    findings: active,
+    suppressedFindings: suppressed,
+    expiredRules,
     durationMs: Date.now() - startTime,
   };
 }

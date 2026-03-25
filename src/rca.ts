@@ -48,6 +48,27 @@ function stripSecretValues(payload: string, truncatedValue: string): { payload: 
 }
 
 /**
+ * Read a snippet of source code surrounding the match from the bundle file.
+ * Returns up to `radius` characters before and after the char offset.
+ * Returns an empty string on any error (missing file, unreadable, etc.).
+ *
+ * @param filePath   - Absolute path to the bundle file containing the match.
+ * @param charOffset - Character offset of the match within the file.
+ * @param radius     - Number of characters to include before and after the match. Defaults to 200.
+ * @returns The surrounding source snippet, or an empty string on error.
+ */
+function readSourceSnippet(filePath: string, charOffset: number, radius = 200): string {
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    const start = Math.max(0, charOffset - radius);
+    const end = Math.min(content.length, charOffset + radius);
+    return content.slice(start, end);
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Build the structured prompt for the AI model.
  */
 function buildPrompt(finding: Finding, nextVersion: string): string {
@@ -74,6 +95,16 @@ function buildPrompt(finding: Finding, nextVersion: string): string {
     sanitizedGitSection = payload;
   }
 
+  // Read surrounding source from the bundle file so the AI can see the actual code
+  let sourceSnippet = readSourceSnippet(finding.filePath, finding.charOffset);
+  if (sourceSnippet && finding.truncatedValue) {
+    const { payload } = stripSecretValues(sourceSnippet, finding.truncatedValue);
+    sourceSnippet = payload;
+  }
+  const sourceSection = sourceSnippet
+    ? `## Source context (${finding.charOffset} ± 200 chars)\n\`\`\`\n${sourceSnippet}\n\`\`\``
+    : '## Source context\nUnable to read source context from bundle file.';
+
   return `You are a senior security engineer performing a root cause analysis (RCA) for a secret leakage finding in a Next.js application.
 
 ## Finding details
@@ -85,6 +116,8 @@ Bundle file:     ${finding.filePath}
 Char offset:     ${finding.charOffset}
 Truncated value: ${finding.truncatedValue}  ← context only, do NOT reference the actual secret
 
+${sourceSection}
+
 ## Git provenance
 ${sanitizedGitSection}
 
@@ -92,20 +125,21 @@ ${sanitizedGitSection}
 Next.js version: ${nextVersion}
 
 ## Instructions
+- FIRST: examine the source context carefully. Determine whether the matched value is actually a secret or a false positive (e.g., a JavaScript variable name, a CSS class, a library constant, or an EME/DRM property that happens to match the pattern). If it looks like a false positive, say so clearly in the "what" field and explain why in "how". Set "fix" to recommend adding a suppression rule to snytch.config.json.
 - Do NOT include or reference the actual secret value in your response.
 - Focus on structural causes (how Next.js bundling works, server/client boundaries, import patterns).
-- Be specific and actionable. Avoid generic advice.
+- Be specific to the actual code shown in the source context. Do not give generic advice about services the project may not use.
 - The "fix" should explain what code change prevents the leak, not just "rotate the secret".
-- The codeExample should show a before/after code snippet (TypeScript/JS) illustrating the fix.
+- The codeExample should show a before/after code snippet (TypeScript/JS) illustrating the fix. For false positives, show a suppression rule example.
 - editorPrompts[0] should be a short prompt for the developer to paste into Cursor/Copilot to auto-apply the fix.
 - editorPrompts[1] should be a short prompt to verify the fix was applied correctly.
 
 Respond with ONLY valid JSON matching this schema (no markdown, no code fences, no commentary).
 All string values must be on a single line — use \\n for newlines within strings, never literal newlines.
 {
-  "what": "string — one sentence: what type of secret leaked",
+  "what": "string — one sentence: what type of secret leaked, OR that this is a false positive and why",
   "when": "string — when it was likely introduced",
-  "how": "string — structural cause: how it ended up in the client bundle",
+  "how": "string — structural cause: how it ended up in the client bundle, OR why the pattern matched incorrectly",
   "fix": "string — concrete remediation steps",
   "codeExample": "string — before/after code snippet (use \\n for line breaks)",
   "editorPrompts": ["string", "string"]

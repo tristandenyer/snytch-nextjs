@@ -35,7 +35,7 @@ export async function runAll(options: AllOptions): Promise<AllResult> {
   let checkResult: CheckResult | null = null;
   let diffResult: DiffResult | null = null;
 
-  const config = await loadConfig(options.projectRoot);
+  const config = loadConfig(options.projectRoot);
   const rcaMaxTokens = options.rcaMaxTokens ?? config?.rca?.maxTokens;
   const serverOnly = options.serverOnly.length > 0
     ? options.serverOnly

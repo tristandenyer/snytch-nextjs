@@ -1,22 +1,23 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { pathToFileURL } from 'url';
 import { SnytchConfig, ResolvedEnvVar } from './types.js';
 
 /**
- * Load snytch.config.js from projectRoot. Returns null if not found or invalid.
+ * Load snytch.config.json from projectRoot. Returns null if not found or invalid.
  * Never throws.
+ *
+ * @param projectRoot - Absolute path to the project root directory.
+ * @returns The parsed config, or null if the file is missing or malformed.
  */
-export async function loadConfig(projectRoot: string): Promise<SnytchConfig | null> {
-  const configPath = join(projectRoot, 'snytch.config.js');
+export function loadConfig(projectRoot: string): SnytchConfig | null {
+  const configPath = join(projectRoot, 'snytch.config.json');
   if (!existsSync(configPath)) return null;
 
   try {
-    const moduleUrl = pathToFileURL(configPath).href;
-    const mod = (await import(moduleUrl)) as { default?: unknown };
-    const config = mod.default ?? mod;
-    if (typeof config !== 'object' || config === null) return null;
-    return config as SnytchConfig;
+    const raw = readFileSync(configPath, 'utf-8');
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    return parsed as SnytchConfig;
   } catch {
     return null;
   }

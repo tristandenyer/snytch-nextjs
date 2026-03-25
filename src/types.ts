@@ -24,7 +24,7 @@ export interface Finding {
 }
 
 /**
- * A finding that was suppressed by a rule in `snytch.config.js`.
+ * A finding that was suppressed by a rule in `snytch.config.json`.
  * Carried through to the report so the suppression is always visible.
  */
 export interface SuppressedFinding {
@@ -91,7 +91,7 @@ export interface RcaConfig {
 }
 
 /**
- * A single suppression rule in `snytch.config.js`.
+ * A single suppression rule in `snytch.config.json`.
  *
  * A finding is suppressed when ALL specified fields match:
  * - `surface` (if present) matches `finding.type`
@@ -170,9 +170,24 @@ export interface CheckFinding {
   truncatedValue: string;
 }
 
+/**
+ * A CheckFinding that was suppressed by a rule in `snytch.config.json`.
+ * Carried through to the report so the suppression is always visible.
+ */
+export interface SuppressedCheckFinding {
+  /** The original finding that was suppressed. */
+  finding: CheckFinding;
+  /** The suppression rule that matched. */
+  rule: SuppressRule;
+}
+
 export interface CheckResult {
   scannedFiles: number;   // number of .env* files examined
   findings: CheckFinding[];
+  /** Findings excluded by suppression rules. */
+  suppressedFindings: SuppressedCheckFinding[];
+  /** Suppression rules whose `until` date has passed. */
+  expiredRules: SuppressRule[];
   durationMs: number;
 }
 
@@ -217,7 +232,7 @@ export interface DiffOptions {
    * When false (default), exit 1 only if a serverOnly key is drifted.
    */
   strict: boolean;
-  /** serverOnly key names loaded from snytch.config.js — used for non-strict exit logic. */
+  /** serverOnly key names loaded from snytch.config.json — used for non-strict exit logic. */
   serverOnly: string[];
   /**
    * Alias groups for key matching. Each inner array lists key names that

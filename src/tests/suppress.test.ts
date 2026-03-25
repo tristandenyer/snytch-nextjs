@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { applySuppressions, isRuleExpired, ruleMatchesFinding } from '../suppress.js';
-import type { Finding, SuppressRule } from '../types.js';
+import {
+  applySuppressions,
+  applyCheckSuppressions,
+  isRuleExpired,
+  ruleMatchesFinding,
+  ruleMatchesCheckFinding,
+} from '../suppress.js';
+import type { CheckFinding, Finding, SuppressRule } from '../types.js';
 
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
@@ -302,6 +308,132 @@ describe('applySuppressions', () => {
     const findings = [makeFinding()];
     const original = [...findings];
     applySuppressions(findings, [{ reason: 'ok' }], TODAY);
+    expect(findings).toEqual(original);
+  });
+});
+
+// ── Check finding fixtures ───────────────────────────────────────────────────
+
+function makeCheckFinding(overrides: Partial<CheckFinding> = {}): CheckFinding {
+  return {
+    varName: 'NEXT_PUBLIC_STRIPE_KEY',
+    severity: 'critical',
+    reason: 'pattern-match',
+    patternName: 'Stripe Live Secret Key',
+    description: 'Stripe live secret key detected',
+    envFile: '.env.local',
+    line: 4,
+    truncatedValue: 'sk_live_•••',
+    ...overrides,
+  };
+}
+
+// ── ruleMatchesCheckFinding ──────────────────────────────────────────────────
+
+describe('ruleMatchesCheckFinding', () => {
+  it('matches when rule has no surface, pattern, or filePath (wildcard)', () => {
+    const rule: SuppressRule = { reason: 'known safe' };
+    expect(ruleMatchesCheckFinding(rule, makeCheckFinding())).toBe(true);
+  });
+
+  it('does not match when rule specifies a surface (surface is scan-only)', () => {
+    const rule: SuppressRule = { surface: 'pattern-match', reason: 'ok' };
+    expect(ruleMatchesCheckFinding(rule, makeCheckFinding())).toBe(false);
+  });
+
+  it('matches when pattern is a substring of patternName', () => {
+    const rule: SuppressRule = { pattern: 'Stripe', reason: 'ok' };
+    expect(ruleMatchesCheckFinding(rule, makeCheckFinding())).toBe(true);
+  });
+
+  it('does not match when pattern is not a substring of patternName', () => {
+    const rule: SuppressRule = { pattern: 'GitHub', reason: 'ok' };
+    expect(ruleMatchesCheckFinding(rule, makeCheckFinding())).toBe(false);
+  });
+
+  it('matches when filePath is a substring of envFile', () => {
+    const rule: SuppressRule = { filePath: '.env.local', reason: 'ok' };
+    expect(ruleMatchesCheckFinding(rule, makeCheckFinding({ envFile: '.env.local' }))).toBe(true);
+  });
+
+  it('does not match when filePath is not a substring of envFile', () => {
+    const rule: SuppressRule = { filePath: '.env.production', reason: 'ok' };
+    expect(ruleMatchesCheckFinding(rule, makeCheckFinding({ envFile: '.env.local' }))).toBe(false);
+  });
+
+  it('does not match when reason is empty', () => {
+    const rule: SuppressRule = { reason: '' };
+    expect(ruleMatchesCheckFinding(rule, makeCheckFinding())).toBe(false);
+  });
+
+  it('does not match when reason is whitespace only', () => {
+    const rule: SuppressRule = { reason: '   ' };
+    expect(ruleMatchesCheckFinding(rule, makeCheckFinding())).toBe(false);
+  });
+});
+
+// ── applyCheckSuppressions ───────────────────────────────────────────────────
+
+describe('applyCheckSuppressions', () => {
+  it('returns all findings as active when rules array is empty', () => {
+    const findings = [makeCheckFinding(), makeCheckFinding({ varName: 'NEXT_PUBLIC_DB_URL' })];
+    const result = applyCheckSuppressions(findings, [], TODAY);
+    expect(result.active).toHaveLength(2);
+    expect(result.suppressed).toHaveLength(0);
+    expect(result.expiredRules).toHaveLength(0);
+  });
+
+  it('suppresses a finding matched by a wildcard rule', () => {
+    const finding = makeCheckFinding();
+    const rule: SuppressRule = { reason: 'test key, not real' };
+    const result = applyCheckSuppressions([finding], [rule], TODAY);
+    expect(result.active).toHaveLength(0);
+    expect(result.suppressed).toHaveLength(1);
+    expect(result.suppressed[0].finding).toBe(finding);
+    expect(result.suppressed[0].rule).toBe(rule);
+  });
+
+  it('does not suppress when rule has a surface (surface is scan-only)', () => {
+    const finding = makeCheckFinding();
+    const rule: SuppressRule = { surface: 'pattern-match', reason: 'ok' };
+    const result = applyCheckSuppressions([finding], [rule], TODAY);
+    expect(result.active).toHaveLength(1);
+    expect(result.suppressed).toHaveLength(0);
+  });
+
+  it('does not suppress when rule is expired', () => {
+    const finding = makeCheckFinding();
+    const rule: SuppressRule = { reason: 'old', until: YESTERDAY };
+    const result = applyCheckSuppressions([finding], [rule], TODAY);
+    expect(result.active).toHaveLength(1);
+    expect(result.suppressed).toHaveLength(0);
+    expect(result.expiredRules).toHaveLength(1);
+  });
+
+  it('suppresses only the finding in the targeted env file', () => {
+    const localFinding = makeCheckFinding({ envFile: '.env.local' });
+    const prodFinding = makeCheckFinding({ envFile: '.env.production' });
+    const rule: SuppressRule = { filePath: '.env.local', reason: 'dev only' };
+    const result = applyCheckSuppressions([localFinding, prodFinding], [rule], TODAY);
+    expect(result.suppressed).toHaveLength(1);
+    expect(result.suppressed[0].finding).toBe(localFinding);
+    expect(result.active).toHaveLength(1);
+    expect(result.active[0]).toBe(prodFinding);
+  });
+
+  it('first matching rule wins', () => {
+    const finding = makeCheckFinding();
+    const rule1: SuppressRule = { reason: 'first' };
+    const rule2: SuppressRule = { reason: 'second' };
+    const result = applyCheckSuppressions([finding], [rule1, rule2], TODAY);
+    expect(result.suppressed).toHaveLength(1);
+    expect(result.suppressed[0].rule).toBe(rule1);
+  });
+
+  it('does not mutate the input findings array', () => {
+    const findings = [makeCheckFinding()];
+    const original = [...findings];
+    applyCheckSuppressions(findings, [{ reason: 'ok' }], TODAY);
     expect(findings).toEqual(original);
   });
 });

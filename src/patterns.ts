@@ -592,7 +592,7 @@ export const PATTERNS: SecretPattern[] = [
   // Airtable (Category 44)
   {
     name: 'Airtable API Key',
-    pattern: /key[a-zA-Z0-9_-]{17}/g,
+    pattern: /(?<![a-zA-Z0-9_])key[a-zA-Z0-9]{17}(?![a-zA-Z0-9_])/g,
     severity: 'critical',
     description: 'Airtable API key',
   },

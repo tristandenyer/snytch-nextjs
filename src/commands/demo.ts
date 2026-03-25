@@ -226,6 +226,8 @@ const CHECK_FINDINGS: CheckFinding[] = [
 const CHECK_RESULT: CheckResult = {
   scannedFiles: 3,
   findings: CHECK_FINDINGS,
+  suppressedFindings: [],
+  expiredRules: [],
   durationMs: 31,
 };
 

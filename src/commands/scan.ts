@@ -90,8 +90,8 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
     }
   }
 
-  // Pass 2: value matching against serverOnly vars from snytch.config.js
-  const config = await loadConfig(options.projectRoot);
+  // Pass 2: value matching against serverOnly vars from snytch.config.json
+  const config = loadConfig(options.projectRoot);
   if (config?.serverOnly && config.serverOnly.length > 0) {
     const resolvedVars = resolveEnvVars(options.projectRoot, config.serverOnly);
 
@@ -179,7 +179,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
     }
   }
 
-  // Pass 4b: apply suppression rules from snytch.config.js
+  // Pass 4b: apply suppression rules from snytch.config.json
   const today = new Date().toISOString().slice(0, 10);
   const suppressionResult = applySuppressions(findings, config?.suppress ?? [], today);
   const activeFindings = suppressionResult.active;
