@@ -4,6 +4,18 @@ All notable changes to `@snytch/nextjs` are documented here.
 
 ---
 
+## [0.16.0] - 2026-06-09
+
+### Security
+
+- **Bumped `@anthropic-ai/sdk` from 0.80.0 to 0.104.1**, clearing two moderate advisories (GHSA-5474-4w2j-mq4c, GHSA-p7fg-763f-g4gf) in the SDK's local filesystem Memory Tool helper. Snytch does not use that helper, but the bump removes the audit findings for downstream consumers. No code changes were required: the `messages.create` API surface used by RCA is unchanged.
+- **Resolved all remaining `npm audit` findings** (12 total, 8 moderate and 4 high) in transitive dependencies via `npm audit fix` and dependency updates: `hono`, `@hono/node-server`, `fast-uri`, `path-to-regexp`, `picomatch`, `vite`, `postcss`, `qs`, `brace-expansion`, `ip-address`. `npm audit` now reports 0 vulnerabilities.
+
+### Changed
+
+- Updated `@modelcontextprotocol/sdk` to ^1.29.0 and `openai` to ^6.42.0.
+- Updated dev dependencies: `eslint` ^10.4.1, `memfs` ^4.57.6, `prettier` ^3.8.4, `typescript-eslint` ^8.61.0, `vitest` ^4.1.8, `@types/node` ^20.19.42, `typescript` ^5.9.3.
+
 ## [0.12.0] - 2026-03-22
 
 ### Added
